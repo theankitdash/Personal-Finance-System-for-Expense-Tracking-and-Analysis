@@ -1,0 +1,40 @@
+/* Style the container */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  /* Style the heading */
+  h1 {
+    text-align: center;
+  }
+  
+  /* Style the form */
+  #date-form {
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  #date-form label {
+    margin-right: 10px;
+  }
+  
+  #date-form button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+  
+  /* Style the graph container */
+  #graph-container {
+    text-align: center;
+  }
+  
+  #graph {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  

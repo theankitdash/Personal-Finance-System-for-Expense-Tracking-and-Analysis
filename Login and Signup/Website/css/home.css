@@ -1,0 +1,55 @@
+/* Style the header */
+header {
+  background-color: #007bff;
+  color: white;
+  padding: 20px;
+  text-align: center; /* Center the content */
+}
+
+/* Style the navigation menu */
+.top-menu ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  text-align: center; /* Center the menu items */
+}
+
+.top-menu ul li {
+  display: inline;
+  margin-right: 20px;
+}
+
+.top-menu ul li a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+/* Style the container for the chart */
+.container {
+  margin: 20px auto; /* Center the container */
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  max-width: 60%; /* Limit container width to 80% of the viewport */
+  overflow-x: auto; /* Allow horizontal scrolling if content overflows */
+  overflow-y: hidden; /* Hide vertical overflow */
+}
+
+/* Style the chart canvas */
+#expenseChart {
+  width: 50%; /* Make the chart canvas responsive */
+  height: auto; /* Maintain aspect ratio */
+}
+
+/* Style the footer */
+footer {
+  background-color: #343a40;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  position: fixed; /* Fix the footer to the bottom of the viewport */
+  width: 100%; /* Make the footer span the entire viewport */
+  bottom: 0; /* Position at the bottom */
+  left: 0; /* Align to the left */
+}

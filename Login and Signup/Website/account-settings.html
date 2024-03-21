@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings - Finance Tracker</title>
+    <link rel="stylesheet" href='css/account-settings.css'>
+</head>
+<body>
+    <div class="container">
+        <h1>Account Settings</h1>
+        <div class="section">
+            <h2>Welcome <span id="phoneNumber"></span></h2>
+        </div>
+
+        <form>
+            <div class="section">
+                <h2>Profile Settings</h2>
+                <div class="setting">
+                    <label for="fullname">Full Name:</label>
+                    <input type="text" id="fullname" name="fullname" placeholder="Enter your full name">
+                </div>
+                
+                <div class="setting">
+                    <button type="submit">Save Profile</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Security Settings</h2>
+                <div class="setting">
+                    <label for="newPassword">New Password:</label>
+                    <input type="password" id="newPassword" name="newPassword" placeholder="Enter your new password">
+                </div>
+                <div class="setting">
+                    <button id="changePasswordBtn" type="button">Change Password</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="logout">
+            <button id="logoutBtn" type="button">Logout</button>
+        </div>
+    </div>
+
+    <script src='js/account-settings.js'></script>
+</body>
+</html>

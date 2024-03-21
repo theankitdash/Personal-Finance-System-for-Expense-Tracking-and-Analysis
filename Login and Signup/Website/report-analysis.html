@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Spending Analysis</title>
+    <link rel="stylesheet" href ='css/report-analysis.css'>
+</head>
+<body>
+    <div class="container">
+        <h1>Financial Spending Analysis</h1>
+        <form id="date-form">
+            <label for="from-date">From:</label>
+            <input type="date" id="from-date">
+            <label for="to-date">To:</label>
+            <input type="date" id="to-date">
+            <button type="submit">Submit</button>
+        </form>
+        <div id="graph-container">
+            <!-- Graphs will be displayed here -->
+            <canvas id="graph"></canvas>
+        </div>
+    </div>
+    <script src='js/report-analyis.js'></script>
+</body>
+</html>

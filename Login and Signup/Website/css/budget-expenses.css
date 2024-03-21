@@ -1,0 +1,54 @@
+/* Style the headings */
+h1, h2 {
+    text-align: center;
+  }
+  
+  /* Style the table */
+  table {
+    width: 100%;
+    margin-bottom: 20px;
+    border-collapse: collapse;
+  }
+  
+  table, th, td {
+    border: 1px solid #ddd;
+  }
+  
+  th, td {
+    padding: 8px;
+    text-align: left;
+  }
+  
+  /* Style the form */
+  form {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  
+  label {
+    display: inline-block;
+    width: 150px;
+    margin-bottom: 10px;
+  }
+  
+  input[type="number"],
+  input[type="date"],
+  input[type="text"],
+  select {
+    width: calc(100% - 170px);
+    padding: 5px;
+    margin-bottom: 10px;
+  }
+  
+  input[type="submit"] {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+  }
+  
+  input[type="submit"]:hover {
+    background-color: #0056b3;
+  }
+  

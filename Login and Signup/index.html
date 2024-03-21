@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang = 'en'>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login and Signup Page</title>
+        <link rel="stylesheet" href = "style.css">
+    </head>
+
+    <body>
+        <div class="container">
+            <div class="form-container">
+                <h2 id="formTitle">Login</h2>
+                <form id="authForm" onsubmit="submitForm(event)">
+
+                    <label for="phone">Phone Number:</label>
+                    <input type="tel" id="phone" name="phone" required>   
+
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+
+                    <label id="confirmPasswordLabel" for="confirmPassword" style="display:none;">Confirm Password:</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" style="display:none;">
+
+                    <button type="submit" id="submitButton">Login</button>
+                </form>
+                <p id="toggleFormText">Don't have an account? <a href="#" onclick="toggleForm()">Register here</a></p>
+            </div>
+        </div>
+        
+
+        <script src="script.js"></script>
+    </body>
+</html>

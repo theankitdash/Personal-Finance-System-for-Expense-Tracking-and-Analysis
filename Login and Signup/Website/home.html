@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finance Tracker</title>
+  <link rel="stylesheet" href ='css/home.css' >
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <div class="user-info">
+      <h1>Welcome, {{ user.username }}</h1>
+      <nav class="top-menu">
+        <ul>
+          <li><a href='budget-expenses.html'>Budgets and Expenses</a></li>
+          <li><a href='report-analysis.html'>Reports and Analysis</a></li>
+          <li><a href='account-settings.html'>Account Settings</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <canvas id="expenseChart"></canvas>
+  </div>
+
+  <footer>
+    <p>&copy; 2024 Finance Tracker. All rights reserved.</p>
+  </footer> 
+  <script src='js/home.js'></script>
+</body>
+</html>
