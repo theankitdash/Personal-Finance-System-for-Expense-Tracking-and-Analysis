@@ -18,11 +18,25 @@
                 <h2>Profile Settings</h2>
                 <div class="setting">
                     <label for="fullname">Full Name:</label>
-                    <input type="text" id="fullname" name="fullname" placeholder="Enter your full name">
+                    <input type="text" id="name" name="name" placeholder="Enter your full name">
                 </div>
-                
+
                 <div class="setting">
-                    <button type="submit">Save Profile</button>
+                    <label for="gender">Gender:</label>
+                    <select id="gender" name="gender">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="setting">
+                    <label for="dob">Date of Birth:</label>
+                    <input type="date" id="dateOfBirth" name="dateOfBirth">
+                </div>
+
+                <div class="setting">
+                    <button id="saveProfileBtn" type="button">Save Profile</button>
                 </div>
             </div>
             

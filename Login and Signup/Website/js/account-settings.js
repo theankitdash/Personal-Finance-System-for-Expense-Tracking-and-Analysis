@@ -11,11 +11,26 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             document.getElementById('phoneNumber').innerText = data.phone;
             document.getElementById('newPassword').value = ''; // Clear the new password field
+
+            // Display personal details
+            document.getElementById('name').value = data.name || '';
+            document.getElementById('gender').value = data.gender || '';
+            document.getElementById('dateOfBirth').value = formatDate(data.dateOfBirth) || '';
         })
         .catch(error => {
             console.error('Error:', error);
             alert('An error occurred while fetching current credentials');
         });
+
+    // Function to format date as YYYY-MM-DD
+    function formatDate(date) {
+        if (!date) return ''; // Return empty string if date is not provided
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }    
 
     // Add event listener to the change password button
     const changePasswordBtn = document.getElementById('changePasswordBtn');
@@ -46,6 +61,40 @@ document.addEventListener('DOMContentLoaded', function() {
             // Handle error
             console.error('Error changing password:', error);
             alert('An error occurred while changing password');
+        });
+    });
+
+    // Add event listener to the form submission
+    const saveProfileBtn = document.getElementById('saveProfileBtn');
+    saveProfileBtn.addEventListener('click', function() {
+        const name = document.getElementById('name').value;
+        const gender = document.getElementById('gender').value;
+        const dateOfBirth = document.getElementById('dateOfBirth').value;
+
+        // Send request to save personal details
+        fetch('/savePersonalDetails', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, gender, dateOfBirth })
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to save personal details');
+            }
+        })
+        .then(data => {
+            // Handle successful saving of personal details
+            console.log('Personal details saved successfully:', data);
+            alert('Personal details saved successfully');
+        })
+        .catch(error => {
+            // Handle error
+            console.error('Error saving personal details:', error);
+            alert('An error occurred while saving personal details');
         });
     });
     

@@ -7,8 +7,6 @@ const session = require('express-session');
 const app = express();
 const port = 3000;
 
-
-
 // Initialize express-session middleware
 app.use(session({
     secret: 'your_secret_key',
@@ -38,6 +36,21 @@ db.connect((err) => {
             CREATE TABLE IF NOT EXISTS credentials (
                 phone BIGINT UNIQUE PRIMARY KEY,
                 password VARCHAR(255)
+            )
+        `, (err) => {
+            if (err) {
+                console.error('Error creating table:', err.message);
+            }
+        });
+
+        // Create a 'personal_details' table if it doesn't exist
+        db.query(`
+            CREATE TABLE IF NOT EXISTS personal_details (
+                phone BIGINT PRIMARY KEY,
+                name VARCHAR(255),
+                gender VARCHAR(10),
+                date_of_birth DATE,
+                FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
             )
         `, (err) => {
             if (err) {
@@ -101,7 +114,7 @@ app.post('/auth/register', async (req, res) => {
     });
 });
 
-// Endpoint to get current phone number and password
+//Endpoint to get current phone number and password
 app.get('/accountSettings', (req, res) => {
     // Check if the user is logged in
     if (!req.session.phone || !req.session.password) {
@@ -112,11 +125,50 @@ app.get('/accountSettings', (req, res) => {
     const phone = req.session.phone;
     const password = req.session.password;
 
-    // Send current phone number and hashed password in the response
-    res.json({ success: true, phone, password });
+    const query = 'SELECT * FROM personal_details WHERE phone = ?';
+    db.query(query, [phone], (err, results) => {
+        if (err) {
+            console.error('Error retrieving personal details:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+
+        if (results.length === 0) {
+            // No personal details found for the user
+            return res.json({ success: true, phone, password, name: '', gender: '', dateOfBirth: '' });
+        }
+
+        // Personal details found, send them in the response
+        const { name, gender, date_of_birth: dateOfBirth } = results[0];
+        res.json({ success: true, phone, password, name, gender, dateOfBirth });
+    });
 });
 
-// Endpoint to change the user's password
+// Endpoint to save personal details
+app.post('/savePersonalDetails', (req, res) => {
+    // Check if the user is logged in
+    if (!req.session.phone || !req.session.password) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const { name, gender, dateOfBirth } = req.body;
+    const phone = req.session.phone;
+
+    // Insert or update personal details for the user
+    const insertOrUpdateQuery = `
+        INSERT INTO personal_details (phone, name, gender, date_of_birth)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE name=?, gender=?, date_of_birth=?
+    `;
+    db.query(insertOrUpdateQuery, [phone, name, gender, dateOfBirth, name, gender, dateOfBirth], (err) => {
+        if (err) {
+            console.error('Error saving personal details:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+        res.json({ success: true, message: 'Personal details saved successfully' });
+    });
+});
+
+//Endpoint to change the user's password
 app.post('/changePassword', async (req, res) => {
     // Check if the user is logged in
     if (!req.session.phone || !req.session.password) {
@@ -148,7 +200,7 @@ app.post('/changePassword', async (req, res) => {
     }
 });
 
-// Endpoint for user logout
+//Endpoint for user logout
 app.get('/logout', (req, res) => {
     // Clear session data
     req.session.destroy(err => {

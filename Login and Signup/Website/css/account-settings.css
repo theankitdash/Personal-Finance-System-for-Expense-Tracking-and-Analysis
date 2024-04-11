@@ -84,6 +84,16 @@ h1 {
     background-color: #2980b9;
 }
 
+.submit button {
+    padding: 10px 20px;
+    background-color: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
 .logout {
     text-align: center;
 }
