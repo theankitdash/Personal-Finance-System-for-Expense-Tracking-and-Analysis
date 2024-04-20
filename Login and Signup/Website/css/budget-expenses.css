@@ -18,8 +18,6 @@ body {
   width: 50%; /* Adjust width as needed */
   float: left;
   padding: 20px;
-  background-color: #f0f0f0;
-  border-right: 2px solid #ccc;
 }
 
 .budget-allocation h2 {
@@ -34,7 +32,6 @@ body {
 .budget-allocation th,
 .budget-allocation td {
   padding: 10px;
-  border-bottom: 1px solid #ddd;
   text-align: left;
 }
 
