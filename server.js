@@ -57,6 +57,24 @@ db.connect((err) => {
                 console.error('Error creating table:', err.message);
             }
         });
+
+        // Create a 'budget' table if it doesn't exist
+        db.query(`
+            CREATE TABLE IF NOT EXISTS budget (
+                phone BIGINT PRIMARY KEY,
+                housing DECIMAL(10, 2),
+                transportation DECIMAL(10, 2),
+                food DECIMAL(10, 2),
+                utilities DECIMAL(10, 2),
+                clothing DECIMAL(10, 2),
+                medical DECIMAL(10, 2),
+                FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
+            )
+        `, (err) => {
+            if (err) {
+                console.error('Error creating budget table:', err.message);
+            }
+        });
     }
 });
 
@@ -115,7 +133,7 @@ app.post('/auth/register', async (req, res) => {
 });
 
 //Endpoint to get current phone number and password
-app.get('/accountSettings', (req, res) => {
+app.get('/Details', (req, res) => {
     // Check if the user is logged in
     if (!req.session.phone || !req.session.password) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -125,21 +143,30 @@ app.get('/accountSettings', (req, res) => {
     const phone = req.session.phone;
     const password = req.session.password;
 
-    const query = 'SELECT * FROM personal_details WHERE phone = ?';
-    db.query(query, [phone], (err, results) => {
+    // Combine both queries into a single query using JOIN
+    const combinedQuery = `
+        SELECT pd.name, pd.gender, pd.date_of_birth, b.housing, b.transportation,
+               b.food, b.utilities, b.clothing, b.medical
+        FROM personal_details pd
+        LEFT JOIN budget b ON pd.phone = b.phone
+        WHERE pd.phone = ?
+    `;
+
+    // Execute the combined query
+    db.query(combinedQuery, [phone], (err, results) => {
         if (err) {
-            console.error('Error retrieving personal details:', err.message);
+            console.error('Error retrieving details:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
 
         if (results.length === 0) {
-            // No personal details found for the user
-            return res.json({ success: true, phone, password, name: '', gender: '', dateOfBirth: '' });
+            return res.json({ success: true, message: 'No details available' });
         }
 
-        // Personal details found, send them in the response
-        const { name, gender, date_of_birth: dateOfBirth } = results[0];
-        res.json({ success: true, phone, password, name, gender, dateOfBirth });
+
+        // Send the response with combined personal and budget information
+        const { name, gender, date_of_birth: dateOfBirth, housing, transportation, food, utilities, clothing, medical} = results[0];
+        res.json({ success: true, phone, password, name, gender, dateOfBirth, housing, transportation, food, utilities, clothing, medical});
     });
 });
 
@@ -167,6 +194,33 @@ app.post('/savePersonalDetails', (req, res) => {
         res.json({ success: true, message: 'Personal details saved successfully' });
     });
 });
+
+// Authentication endpoint for accessing budget information
+app.post('/saveBudget', (req, res) => {
+    // Check if the user is logged in
+    if (!req.session.phone || !req.session.password) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Fetch budget information for the logged-in user
+    const {housing, transportation, food, utilities, clothing, medical} = req.body;
+    const phone = req.session.phone;
+
+    // Insert or update personal details for the user
+    const insertOrUpdateQuery = `
+        INSERT INTO budget (phone, housing, transportation, food, utilities, clothing, medical)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE housing=?, transportation=?, food=?, utilities=?, clothing=?, medical=?
+    `;
+    db.query(insertOrUpdateQuery, [phone, housing, transportation, food, utilities, clothing, medical, housing, transportation, food, utilities, clothing, medical], (err) => {
+        if (err) {
+            console.error('Error retrieving budget information:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+        res.json({ success: true, message: 'Budget details saved successfully' });
+    });
+});
+
 
 //Endpoint to change the user's password
 app.post('/changePassword', async (req, res) => {

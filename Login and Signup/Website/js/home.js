@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Fetch current phone number and password
-  fetch('/accountSettings') // Endpoint to get the current user's phone number
+
+  fetch('/Details') // Endpoint to get the current user's Details
   .then(response => {
       if (response.ok) {
           return response.json();
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
   })
   .then(data => {
-      // Display personal details
+      // Display Name
       document.getElementById('name').textContent = data.name || '';
       
   })
