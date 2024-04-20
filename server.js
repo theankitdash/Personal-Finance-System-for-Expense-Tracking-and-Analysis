@@ -68,6 +68,8 @@ db.connect((err) => {
                 utilities DECIMAL(10, 2),
                 clothing DECIMAL(10, 2),
                 medical DECIMAL(10, 2),
+                investment DECIMAL(10, 2),
+                others DECIMAL(10, 2),
                 FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
             )
         `, (err) => {
@@ -146,7 +148,7 @@ app.get('/Details', (req, res) => {
     // Combine both queries into a single query using JOIN
     const combinedQuery = `
         SELECT pd.name, pd.gender, pd.date_of_birth, b.housing, b.transportation,
-               b.food, b.utilities, b.clothing, b.medical
+               b.food, b.utilities, b.clothing, b.medical, b.investment, b.others
         FROM personal_details pd
         LEFT JOIN budget b ON pd.phone = b.phone
         WHERE pd.phone = ?
@@ -165,8 +167,8 @@ app.get('/Details', (req, res) => {
 
 
         // Send the response with combined personal and budget information
-        const { name, gender, date_of_birth: dateOfBirth, housing, transportation, food, utilities, clothing, medical} = results[0];
-        res.json({ success: true, phone, password, name, gender, dateOfBirth, housing, transportation, food, utilities, clothing, medical});
+        const { name, gender, date_of_birth: dateOfBirth, housing, transportation, food, utilities, clothing, medical, investment, others} = results[0];
+        res.json({ success: true, phone, password, name, gender, dateOfBirth, housing, transportation, food, utilities, clothing, medical, investment, others});
     });
 });
 
@@ -203,16 +205,16 @@ app.post('/saveBudget', (req, res) => {
     }
 
     // Fetch budget information for the logged-in user
-    const {housing, transportation, food, utilities, clothing, medical} = req.body;
+    const {housing, transportation, food, utilities, clothing, medical, investment, others} = req.body;
     const phone = req.session.phone;
 
     // Insert or update personal details for the user
     const insertOrUpdateQuery = `
-        INSERT INTO budget (phone, housing, transportation, food, utilities, clothing, medical)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE housing=?, transportation=?, food=?, utilities=?, clothing=?, medical=?
+        INSERT INTO budget (phone, housing, transportation, food, utilities, clothing, medical, investment, others)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE housing=?, transportation=?, food=?, utilities=?, clothing=?, medical=?, investment=?, others=?
     `;
-    db.query(insertOrUpdateQuery, [phone, housing, transportation, food, utilities, clothing, medical, housing, transportation, food, utilities, clothing, medical], (err) => {
+    db.query(insertOrUpdateQuery, [phone, housing, transportation, food, utilities, clothing, medical, investment, others, housing, transportation, food, utilities, clothing, medical, investment, others], (err) => {
         if (err) {
             console.error('Error retrieving budget information:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });

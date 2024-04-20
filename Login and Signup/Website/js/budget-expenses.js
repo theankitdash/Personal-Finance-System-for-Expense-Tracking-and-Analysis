@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
           document.getElementById('utilitiesBudget').value = budgetData.utilities;
           document.getElementById('clothingBudget').value = budgetData.clothing;
           document.getElementById('medicalBudget').value = budgetData.medical;
+          document.getElementById('investmentBudget').value = budgetData.investment;
+          document.getElementById('otherBudget').value = budgetData.others;
             
         })
         .catch(error => {
@@ -32,7 +34,9 @@ document.addEventListener('DOMContentLoaded', function() {
           food: document.getElementById('foodBudget').value,
           utilities: document.getElementById('utilitiesBudget').value,
           clothing: document.getElementById('clothingBudget').value,
-          medical: document.getElementById('medicalBudget').value
+          medical: document.getElementById('medicalBudget').value,
+          investment: document.getElementById('investmentBudget').value,
+          others: document.getElementById('otherBudget').value
         };
 
           // Send updated budget data to the server
