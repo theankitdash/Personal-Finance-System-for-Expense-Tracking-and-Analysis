@@ -1,14 +1,22 @@
-// JavaScript for the finance tracker application
-
 document.addEventListener('DOMContentLoaded', function() {
-  // Simulated user object
-  const user = {
-    username: "JohnDoe"
-  };
-
-  // Display the username in the header
-  const welcomeMessage = document.querySelector('header h1');
-  welcomeMessage.textContent = `Welcome, ${user.username}!`;
+  // Fetch current phone number and password
+  fetch('/accountSettings') // Endpoint to get the current user's phone number
+  .then(response => {
+      if (response.ok) {
+          return response.json();
+      } else {
+          throw new Error('Failed to fetch current credentials');
+      }
+  })
+  .then(data => {
+      // Display personal details
+      document.getElementById('name').textContent = data.name || '';
+      
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while fetching current credentials');
+  });
 
   // Create a sample chart using Chart.js
   const ctx = document.getElementById('expenseChart').getContext('2d');
