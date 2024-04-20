@@ -1,54 +1,116 @@
-/* Style the headings */
-h1, h2 {
-    text-align: center;
-  }
-  
-  /* Style the table */
-  table {
-    width: 100%;
-    margin-bottom: 20px;
-    border-collapse: collapse;
-  }
-  
-  table, th, td {
-    border: 1px solid #ddd;
-  }
-  
-  th, td {
-    padding: 8px;
-    text-align: left;
-  }
-  
-  /* Style the form */
-  form {
-    max-width: 500px;
-    margin: 0 auto;
-  }
-  
-  label {
-    display: inline-block;
-    width: 150px;
-    margin-bottom: 10px;
-  }
-  
-  input[type="number"],
-  input[type="date"],
-  input[type="text"],
-  select {
-    width: calc(100% - 170px);
-    padding: 5px;
-    margin-bottom: 10px;
-  }
-  
-  input[type="submit"] {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-  }
-  
-  input[type="submit"]:hover {
-    background-color: #0056b3;
-  }
-  
+/* CSS for grid layout */
+body {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Two equal columns */
+  gap: 20px; /* Adjust gap as needed */
+}
+
+.budget-allocation {
+  grid-column: 1; /* Place on the first column */
+}
+
+.expenses {
+  grid-column: 2; /* Place on the second column */
+}
+
+/* CSS for budget allocation section */
+.budget-allocation {
+  width: 50%; /* Adjust width as needed */
+  float: left;
+  padding: 20px;
+  background-color: #f0f0f0;
+  border-right: 2px solid #ccc;
+}
+
+.budget-allocation h2 {
+  margin-top: 0;
+}
+
+.budget-allocation table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.budget-allocation th,
+.budget-allocation td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.budget-allocation th {
+  background-color: #e0e0e0;
+}
+
+.budget-allocation input[type="number"] {
+  width: 80px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.budget-allocation button {
+  padding: 10px 20px;
+  background-color: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.budget-allocation button:hover {
+  background-color: #45a049;
+}
+
+/* CSS for expenses section */
+.expenses {
+  width: 100%; /* Adjust width as needed */
+  flex-direction: column;
+  padding: 20px;
+}
+
+.expenses h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.expenses form {
+  width: 100%;
+  max-width: 400px;
+}
+
+.expenses label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.expenses input[type="date"],
+.expenses input[type="number"],
+.expenses input[type="text"],
+.expenses select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+}
+
+.expenses input[type="file"] {
+  margin-bottom: 20px;
+}
+
+.expenses input[type="submit"] {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.expenses input[type="submit"]:hover {
+  background-color: #0056b3;
+}
