@@ -58,18 +58,14 @@ db.connect((err) => {
             }
         });
 
-        // Create a 'budget' table if it doesn't exist
+        // Create a 'expenses' table if it doesn't exist
         db.query(`
-            CREATE TABLE IF NOT EXISTS budget (
+            CREATE TABLE IF NOT EXISTS expenses (
                 phone BIGINT PRIMARY KEY,
-                housing DECIMAL(10, 2),
-                transportation DECIMAL(10, 2),
-                food DECIMAL(10, 2),
-                utilities DECIMAL(10, 2),
-                clothing DECIMAL(10, 2),
-                medical DECIMAL(10, 2),
-                investment DECIMAL(10, 2),
-                others DECIMAL(10, 2),
+                date DATE,
+                amount DECIMAL(10, 2),
+                description VARCHAR(200),
+                category VARCHAR(100),
                 FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
             )
         `, (err) => {
@@ -147,10 +143,9 @@ app.get('/Details', (req, res) => {
 
     // Combine both queries into a single query using JOIN
     const combinedQuery = `
-        SELECT pd.name, pd.gender, pd.date_of_birth, b.housing, b.transportation,
-               b.food, b.utilities, b.clothing, b.medical, b.investment, b.others
+        SELECT pd.name, pd.gender, pd.date_of_birth, e.date, e.amount, e.description, e.category
         FROM personal_details pd
-        LEFT JOIN budget b ON pd.phone = b.phone
+        LEFT JOIN expenses e ON pd.phone = e.phone
         WHERE pd.phone = ?
     `;
 
@@ -167,8 +162,8 @@ app.get('/Details', (req, res) => {
 
 
         // Send the response with combined personal and budget information
-        const { name, gender, date_of_birth: dateOfBirth, housing, transportation, food, utilities, clothing, medical, investment, others} = results[0];
-        res.json({ success: true, phone, password, name, gender, dateOfBirth, housing, transportation, food, utilities, clothing, medical, investment, others});
+        const { name, gender, date_of_birth: dateOfBirth, date, amount, description, category} = results[0];
+        res.json({ success: true, phone, password, name, gender, dateOfBirth, date, amount, description, category});
     });
 });
 
@@ -198,28 +193,27 @@ app.post('/savePersonalDetails', (req, res) => {
 });
 
 // Authentication endpoint for accessing budget information
-app.post('/saveBudget', (req, res) => {
+app.post('/expenses', (req, res) => {
     // Check if the user is logged in
     if (!req.session.phone || !req.session.password) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    // Fetch budget information for the logged-in user
-    const {housing, transportation, food, utilities, clothing, medical, investment, others} = req.body;
+    // Extract expense details from request body
+    const { date, amount, description, category_id, category } = req.body;
     const phone = req.session.phone;
 
-    // Insert or update personal details for the user
-    const insertOrUpdateQuery = `
-        INSERT INTO budget (phone, housing, transportation, food, utilities, clothing, medical, investment, others)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE housing=?, transportation=?, food=?, utilities=?, clothing=?, medical=?, investment=?, others=?
+    // Insert expense into the database
+    const insertQuery = `
+        INSERT INTO expenses (phone, date, amount, description, category)
+        VALUES (?, ?, ?, ?, ?)
     `;
-    db.query(insertOrUpdateQuery, [phone, housing, transportation, food, utilities, clothing, medical, investment, others, housing, transportation, food, utilities, clothing, medical, investment, others], (err) => {
+    db.query(insertQuery, [phone, date, amount, description, category, date, amount, description, category], (err) => {
         if (err) {
-            console.error('Error retrieving budget information:', err.message);
+            console.error('Error adding expense:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
-        res.json({ success: true, message: 'Budget details saved successfully' });
+        res.json({ success: true, message: 'Expense added successfully' });
     });
 });
 

@@ -4,52 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Budget and Expenses</title>
-    <link rel="stylesheet" href ='css/budget-expenses.css'>
+    <link rel="stylesheet" href ='css/Expenses.css'>
 </head>
 <body>
-    <div class="budget-allocation">
-        <h2>Budget Allocation</h2>
-        <table>
-            <tr>
-                <th>Category</th>
-                <th>Budget Amount (₹)</th>
-            </tr>
-            <tr>
-                <td>Housing</td>
-                <td>₹<input type="number" id="housingBudget" value="0"></td>
-            </tr>
-            <tr>
-                <td>Transportation</td>
-                <td>₹<input type="number" id="transportationBudget" value="0"></td>
-            </tr>
-            <tr>
-                <td>Food</td>
-                <td>₹<input type="number" id="foodBudget" value="0"></td>
-            </tr>
-            <tr>
-                <td>Utilities</td>
-                <td>₹<input type="number" id="utilitiesBudget" value="0"></td>
-            </tr>
-            <tr>
-                <td>Clothing</td>
-                <td>₹<input type="number" id="clothingBudget" value="0"></td>
-            </tr>
-            <tr>
-                <td>Medical</td>
-                <td>₹<input type="number" id="medicalBudget" value="0"></td>
-            </tr>
-            <tr>
-                <td>Investment</td>
-                <td>₹<input type="number" id="investmentBudget" value="0"></td>
-            </tr>
-            <tr>
-                <td>Other category</td>
-                <td>₹<input type="number" id="otherBudget" value="0"></td>
-            </tr>
-        </table>
-        <button id="saveBudgetBtn" type = "button">Save Budget</button>
-    </div>
-
+    <div class="expenses-container">
     <div class="expenses">
         <h2>Expenses</h2>
         <form class="expenses" action="#" method="post">
@@ -72,7 +30,7 @@
                 <option value="Clothing">Clothing</option>
                 <option value="Medical">Medical</option>
                 <option value="Investment">Investment</option>
-                <option value="Other category">Other category</option>
+                <option value="Other Category">Other Category</option>
             </select><br><br>
             
             <label for="expenseReceipt">Receipt (Optional):</label>
@@ -81,6 +39,26 @@
             <input type="submit" value="Add Expense">
         </form>
     </div>
-    <script src="js/budget-expenses.js"></script>
+
+    <div class="expenses-history">
+        <h2>Expenses History</h2>
+        <label for="selectCategory">Select category:</label>
+        <select id="selectCategory" onchange="filterExpenses()">
+            <option value="all">All</option>
+            <option value="Housing">Housing</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Food">Food</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Medical">Medical</option>
+            <option value="Investment">Investment</option>
+            <option value="Other Category">Other Category</option>
+        </select>
+        <ul id="expensesList">
+            <!-- Expenses will be dynamically added here using JavaScript -->
+        </ul>
+    </div>
+</div>
+    <script src="js/Expenses.js"></script>
 </body>
 </html>
