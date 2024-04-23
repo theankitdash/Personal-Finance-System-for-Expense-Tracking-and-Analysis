@@ -217,6 +217,27 @@ app.post('/saveExpenses', (req, res) => {
     });
 });
 
+// Endpoint to retrieve expenses history for the current user
+app.get('/expensesHistory', (req, res) => {
+    // Check if the user is logged in
+    if (!req.session.phone || !req.session.password) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Fetch expenses history for the logged-in user
+    const phone = req.session.phone;
+
+    const query = 'SELECT date, amount, description, category FROM expenses WHERE phone = ?';
+    db.query(query, [phone], (err, results) => {
+        if (err) {
+            console.error('Error retrieving expenses history:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+
+        res.json(results);
+    });
+});
+
 
 //Endpoint to change the user's password
 app.post('/changePassword', async (req, res) => {
