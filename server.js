@@ -193,7 +193,7 @@ app.post('/savePersonalDetails', (req, res) => {
 });
 
 // Authentication endpoint for accessing budget information
-app.post('/expenses', (req, res) => {
+app.post('/saveExpenses', (req, res) => {
     // Check if the user is logged in
     if (!req.session.phone || !req.session.password) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });

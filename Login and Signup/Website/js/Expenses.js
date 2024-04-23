@@ -1,35 +1,53 @@
-function filterExpenses() {
-    var selectElement = document.getElementById("selectCategory");
-    var selectedCategory = selectElement.value;
-    var expenses = getExpenses(); // Assume getExpenses() retrieves expenses data
-    
-    var filteredExpenses = expenses.filter(function(expense) {
-        return selectedCategory === "all" || expense.category === selectedCategory;
+document.addEventListener('DOMContentLoaded', function() {
+
+    fetch('/Details') // Endpoint to get the current user's Details
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            throw new Error('Failed to fetch current credentials');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while fetching current credentials');
     });
 
-    displayExpenses(filteredExpenses);
-}
+    // Add event listener to the form submission
+    const saveExpenseBtn = document.getElementById('saveExpenseBtn');
+    saveExpenseBtn.addEventListener('click', function(event) {
+        event.preventDefault(); 
 
-function displayExpenses(expenses) {
-    var expensesList = document.getElementById("expensesList");
-    expensesList.innerHTML = "";
+        const date = document.getElementById('expenseDate').value;
+        const amount = document.getElementById('expenseAmount').value;
+        const description = document.getElementById('expenseDescription').value;
+        const category = document.getElementById('expenseCategory').value;
 
-    expenses.forEach(function(expense) {
-        var li = document.createElement("li");
-        li.textContent = expense.date + " - " + expense.amount + " - " + expense.description;
-        expensesList.appendChild(li);
+        // Send request to save Expenses
+        fetch('/saveExpenses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ date, amount, description, category })
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to save Expense');
+            }
+        })
+        .then(data => {
+            // Handle successful saving of Expenses
+            console.log('Expense saved successfully:', data);
+            alert('Expense saved successfully');
+        })
+        .catch(error => {
+            // Handle error
+            console.error('Error saving Expense:', error);
+            alert('An error occurred while saving Expense');
+        });
     });
-}
+});
 
-// Function to fetch expenses data, replace with actual implementation
-function getExpenses() {
-    // Replace this with actual data retrieval logic
-    return [
-        { date: "2024-04-21", amount: 50, description: "Groceries", category: "Food" },
-        { date: "2024-04-20", amount: 100, description: "Gas", category: "Transportation" },
-        // Add more expenses data here
-    ];
-}
-
-// Initially display all expenses
-filterExpenses();
