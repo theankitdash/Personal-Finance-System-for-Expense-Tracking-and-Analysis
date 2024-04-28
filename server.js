@@ -47,9 +47,9 @@ db.connect((err) => {
         db.query(`
             CREATE TABLE IF NOT EXISTS personal_details (
                 phone BIGINT PRIMARY KEY,
-                name VARCHAR(255),
-                gender VARCHAR(10),
-                date_of_birth DATE,
+                name VARCHAR(255) NOT NULL,
+                gender VARCHAR(10) NOT NULL,
+                date_of_birth DATE NOT NULL,
                 FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
             )
         `, (err) => {
@@ -62,11 +62,11 @@ db.connect((err) => {
         db.query(`
             CREATE TABLE IF NOT EXISTS expenses (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                phone BIGINT,
-                date DATE,
-                amount DECIMAL(10, 2),
-                description VARCHAR(200),
-                category VARCHAR(100),
+                phone BIGINT NOT NULL,
+                date DATE NOT NULL,
+                amount DECIMAL(10, 2) NOT NULL,
+                description VARCHAR(200) NOT NULL,
+                category VARCHAR(100) NOT NULL,
                 FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
             )
         `, (err) => {
