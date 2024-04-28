@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 descriptionCell.textContent = expense.description;
                 row.appendChild(descriptionCell);
 
-                // Create receipt cell
+/*                // Create receipt cell
                 const receiptCell = document.createElement('td');
                 if (expense.receipt) {
                     // If receipt exists, create a link to view/download it
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     receiptCell.textContent = 'N/A';
                 }
-                row.appendChild(receiptCell);
+                row.appendChild(receiptCell);  */
 
                 // Create action button
                 const actionCell = document.createElement('td');
