@@ -1,45 +1,78 @@
 document.addEventListener('DOMContentLoaded', function() {
-
-  fetch('/Details') // Endpoint to get the current user's Details
-  .then(response => {
+  // Fetch current user's details
+  fetch('/Details')
+    .then(response => {
       if (response.ok) {
-          return response.json();
+        return response.json();
       } else {
-          throw new Error('Failed to fetch current credentials');
+        throw new Error('Failed to fetch current credentials');
       }
-  })
-  .then(data => {
+    })
+    .then(data => {
       // Display Name
       document.getElementById('name').textContent = data.name || '';
-      
-  })
-  .catch(error => {
+
+      // Fetch and render expense data for the current month
+      fetchCurrentMonthExpenses();
+    })
+    .catch(error => {
       console.error('Error:', error);
       alert('An error occurred while fetching current credentials');
+    });
+});
+
+function fetchCurrentMonthExpenses() {
+  // Fetch expenses data for the current month
+  fetch('/currentMonthExpenses')
+    .then(response => response.json())
+    .then(data => {
+      // Process the data and create the bar graph
+      renderBarGraph(data);
+    })
+    .catch(error => {
+      console.error('Error fetching current month expenses:', error);
+    });
+}
+
+function renderBarGraph(expenses) {
+  // Extract category-wise data from expenses
+  const categories = {};
+  expenses.forEach(expense => {
+    const category = expense.category;
+    if (!categories[category]) {
+      categories[category] = 0;
+    }
+    categories[category] += parseFloat(expense.amount);
   });
 
-  // Create a sample chart using Chart.js
+  // Prepare data for Chart.js
+  const categoryLabels = Object.keys(categories);
+  const categoryAmounts = Object.values(categories);
+
+  // Render the bar graph using Chart.js
   const ctx = document.getElementById('expenseChart').getContext('2d');
-  const expenseChart = new Chart(ctx, {
+  new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Rent', 'Groceries', 'Utilities', 'Entertainment', 'Transportation'],
+      labels: categoryLabels,
       datasets: [{
-        label: 'Monthly Expenses',
-        data: [1000, 500, 300, 200, 400],
+        label: 'Total Expenses',
+        data: categoryAmounts,
         backgroundColor: [
-          'rgba(255, 99, 132, 0.5)',
-          'rgba(54, 162, 235, 0.5)',
-          'rgba(255, 206, 86, 0.5)',
-          'rgba(75, 192, 192, 0.5)',
-          'rgba(153, 102, 255, 0.5)'
+          'rgba(255, 99, 132, 0.2)',
+          'rgba(54, 162, 235, 0.2)',
+          'rgba(255, 206, 86, 0.2)',
+          'rgba(75, 192, 192, 0.2)',
+          'rgba(153, 102, 255, 0.2)',
+          'rgba(255, 159, 64, 0.2)'
         ],
         borderColor: [
           'rgba(255, 99, 132, 1)',
           'rgba(54, 162, 235, 1)',
           'rgba(255, 206, 86, 1)',
           'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)'
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 159, 64, 1)'
         ],
         borderWidth: 1
       }]
@@ -54,4 +87,4 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
-});
+}

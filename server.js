@@ -193,6 +193,45 @@ app.post('/savePersonalDetails', (req, res) => {
     });
 });
 
+// Endpoint to retrieve expenses for the current month
+app.get('/currentMonthExpenses', (req, res) => {
+    // Check if the user is logged in
+    if (!req.session.phone || !req.session.password) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Fetch expenses for the logged-in user for the current month
+    const phone = req.session.phone;
+    const currentMonth = new Date().getMonth() + 1; // Get the current month (1-indexed)
+    const currentYear = new Date().getFullYear(); // Get the current year
+
+    // Construct the start and end date of the current month
+    const startDate = new Date(currentYear, currentMonth - 1, 1); // 1st day of the current month
+    const endDate = new Date(currentYear, currentMonth, 0); // Last day of the current month
+
+    // Format the dates as YYYY-MM-DD strings
+    const formattedStartDate = startDate.toISOString().split('T')[0];
+    const formattedEndDate = endDate.toISOString().split('T')[0];
+
+    // SQL query to fetch expenses for the current month
+    const query = `
+        SELECT id, date, amount, description, category
+        FROM expenses
+        WHERE phone = ? AND date >= ? AND date <= ?
+    `;
+    const queryParams = [phone, formattedStartDate, formattedEndDate];
+
+    db.query(query, queryParams, (err, results) => {
+        if (err) {
+            console.error('Error retrieving current month expenses:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+
+        res.json(results);
+    });
+});
+
+
 // Authentication endpoint for accessing budget information
 app.post('/saveExpenses', (req, res) => {
     // Check if the user is logged in
