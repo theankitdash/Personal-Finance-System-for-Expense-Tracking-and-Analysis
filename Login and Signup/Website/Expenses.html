@@ -54,9 +54,20 @@
             <option value="Investment">Investment</option>
             <option value="Other Category">Other Category</option>
         </select>
-        <ul id="expensesList">
-            <!-- Expenses will be dynamically added here using JavaScript -->
-        </ul>
+        <table id="expensesTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Description</th>
+                    <th>Receipt</th> 
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="expensesTableBody"> 
+                
+            </tbody>
+        </table>
     </div>
 </div>
     <script src="js/Expenses.js"></script>

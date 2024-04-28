@@ -1,5 +1,15 @@
 document.addEventListener('DOMContentLoaded', function() {
 
+    // Function to format date as YYYY-MM-DD
+    function formatDate(date) {
+        if (!date) return ''; // Return empty string if date is not provided
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }    
+
     // Fetch current user's details
     fetch('/Details')
     .then(response => {
@@ -56,8 +66,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to update expenses history
     function updateExpensesHistory() {
-        // Fetch expenses history
-        fetch('/expensesHistory')
+        // Fetch expenses history based on selected category
+        const selectedCategory = document.getElementById('selectCategory').value;
+        const url = '/expensesHistory?category=' + selectedCategory;
+
+        fetch(url)
         .then(response => {
             if (response.ok) {
                 return response.json();
@@ -67,14 +80,56 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(expenses => {
             // Clear existing expenses list
-            const expensesList = document.getElementById('expensesList');
-            expensesList.innerHTML = '';
+            const expensesTableBody = document.getElementById('expensesTableBody');
+            expensesTableBody.innerHTML = '';
 
-            // Populate expenses list with fetched data
+            // Populate expenses table with fetched data
             expenses.forEach(expense => {
-                const li = document.createElement('li');
-                li.textContent = `${expense.date} - ${expense.amount} - ${expense.category}`;
-                expensesList.appendChild(li);
+                const row = document.createElement('tr');
+
+                // Format date string
+                const formattedDate = formatDate(expense.date);
+
+                // Create table cells for each expense attribute
+                const dateCell = document.createElement('td');
+                dateCell.textContent = formattedDate;
+                row.appendChild(dateCell);
+
+                const amountCell = document.createElement('td');
+                amountCell.textContent = expense.amount;
+                row.appendChild(amountCell);
+
+                const descriptionCell = document.createElement('td');
+                descriptionCell.textContent = expense.description;
+                row.appendChild(descriptionCell);
+
+                // Create receipt cell
+                const receiptCell = document.createElement('td');
+                if (expense.receipt) {
+                    // If receipt exists, create a link to view/download it
+                    const receiptLink = document.createElement('a');
+                    receiptLink.href = '/receipts/' + expense.receipt; // Update the href with the actual path to the receipt
+                    receiptLink.textContent = 'View Receipt';
+                    receiptCell.appendChild(receiptLink);
+                } else {
+                    receiptCell.textContent = 'N/A';
+                }
+                row.appendChild(receiptCell);
+
+                // Create action button
+                const actionCell = document.createElement('td');
+                const removeButton = document.createElement('button');
+                removeButton.textContent = 'Remove';
+                removeButton.addEventListener('click', function() {
+                    // Call function to remove expense when button is clicked
+                    removeExpense(expense.id);
+                });
+                actionCell.appendChild(removeButton);
+                row.appendChild(actionCell);
+
+                // Append row to the table body
+                expensesTableBody.appendChild(row);
+
             });
         })
         .catch(error => {
@@ -84,6 +139,33 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Add event listener to the category dropdown menu
+    const selectCategory = document.getElementById('selectCategory');
+    selectCategory.addEventListener('change', updateExpensesHistory);
+
     // Initial update of expenses history when the page loads
     updateExpensesHistory();
+
+    // Function to remove expense
+    function removeExpense(id) {
+        
+        // Send request to remove expense with the given id
+        fetch('/expenses/' + id, {
+            method: 'DELETE',    
+        })
+        .then(response => {
+            if (response.ok) {
+                // Refresh expenses history after removing expense
+                updateExpensesHistory();
+                alert('Expense removed successfully');
+            } else {
+                throw new Error('Failed to remove expense');
+            }
+        })
+        .catch(error => {
+            // Handle error
+            console.error('Error removing expense:', error);
+            alert('An error occurred while removing expense');
+        });
+    }
 });

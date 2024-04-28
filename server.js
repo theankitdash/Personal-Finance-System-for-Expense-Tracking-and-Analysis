@@ -61,7 +61,8 @@ db.connect((err) => {
         // Create a 'expenses' table if it doesn't exist
         db.query(`
             CREATE TABLE IF NOT EXISTS expenses (
-                phone BIGINT PRIMARY KEY,
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                phone BIGINT,
                 date DATE,
                 amount DECIMAL(10, 2),
                 description VARCHAR(200),
@@ -200,7 +201,7 @@ app.post('/saveExpenses', (req, res) => {
     }
 
     // Extract expense details from request body
-    const { date, amount, description, category_id, category } = req.body;
+    const { date, amount, description, category} = req.body;
     const phone = req.session.phone;
 
     // Insert expense into the database
@@ -208,12 +209,13 @@ app.post('/saveExpenses', (req, res) => {
         INSERT INTO expenses (phone, date, amount, description, category)
         VALUES (?, ?, ?, ?, ?)
     `;
-    db.query(insertQuery, [phone, date, amount, description, category, date, amount, description, category], (err) => {
+    db.query(insertQuery, [phone, date, amount, description, category, date, amount, description, category], (err, result) => {
         if (err) {
             console.error('Error adding expense:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
-        res.json({ success: true, message: 'Expense added successfully' });
+        // Send the inserted expense's id back to the client
+        res.json({ success: true, message: 'Expense added successfully', id: result.insertId });
     });
 });
 
@@ -224,17 +226,49 @@ app.get('/expensesHistory', (req, res) => {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    // Fetch expenses history for the logged-in user
+    // Fetch expenses history for the logged-in user based on selected category
     const phone = req.session.phone;
+    const category = req.query.category; // Retrieve selected category from query parameters
 
-    const query = 'SELECT date, amount, description, category FROM expenses WHERE phone = ?';
-    db.query(query, [phone], (err, results) => {
+    let query = 'SELECT id, date, amount, description FROM expenses WHERE phone = ?';
+    const queryParams = [phone];
+
+    // If category is provided, add category filter to the query
+    if (category && category !== 'all') {
+        query += ' AND category = ?';
+        queryParams.push(category);
+    }
+
+    db.query(query, queryParams, (err, results) => {
         if (err) {
             console.error('Error retrieving expenses history:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
 
         res.json(results);
+    });
+});
+
+// Endpoint to remove an expense
+app.delete('/expenses/:id', (req, res) => {
+    // Check if the user is logged in
+    if (!req.session.phone || !req.session.password) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Extract the id of the expense to be removed from the request parameters
+    const id = parseInt(req.params.id, 10); // Parse the id as an integer with base 10
+
+    // Delete the expense from the database
+    const deleteQuery = `
+        DELETE FROM expenses WHERE id = ?
+    `;
+    db.query(deleteQuery, [id], (err) => {
+        if (err) {
+            console.error('Error removing expense:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+        res.json({ success: true, message: 'Expense removed successfully' });
     });
 });
 

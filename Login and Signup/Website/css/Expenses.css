@@ -62,18 +62,24 @@
   cursor: pointer;
 }
 
-/* Style for expenses history list */
-.expenses-history ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
+/* Style for expenses history table */
+.expenses-history table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-/* Style for expenses history list items */
-.expenses-history ul li {
+/* Style for expenses history table header */
+.expenses-history th {
   padding: 10px;
-  margin-bottom: 5px;
-  background-color: #fff;
+  background-color: #4CAF50;
+  color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+/* Style for expenses history table cells */
+.expenses-history td {
+  padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
 }
