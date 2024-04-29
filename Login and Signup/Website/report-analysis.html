@@ -14,13 +14,20 @@
             <input type="date" id="from-date">
             <label for="to-date">To:</label>
             <input type="date" id="to-date">
-            <button type="submit">Submit</button>
+            <button id="submit-btn" type="submit">Submit</button>
         </form>
         <div id="graph-container">
             <!-- Graphs will be displayed here -->
             <canvas id="graph"></canvas>
         </div>
+        <div id="analysis-container">
+            <h2>Analysis Results</h2>
+            <div id="analysis-results">
+                <!-- Analysis results will be displayed here -->
+            </div>
+        </div>
     </div>
-    <script src='js/report-analyis.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src='js/report-analysis.js'></script>
 </body>
 </html>

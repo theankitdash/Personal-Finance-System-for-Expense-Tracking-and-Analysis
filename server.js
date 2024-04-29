@@ -3,6 +3,7 @@ const path = require('path');
 const mysql = require('mysql');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+const { spawn } = require('child_process');
 
 const app = express();
 const port = 3000;
@@ -308,6 +309,59 @@ app.delete('/expenses/:id', (req, res) => {
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
         res.json({ success: true, message: 'Expense removed successfully' });
+    });
+});
+
+
+// Endpoint to retrieve data for the analysis
+app.get('/expensesData', (req, res) => {
+    // Check if the user is logged in
+    if (!req.session.phone || !req.session.password) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Fetch data for the analysis based on selected date range
+    const { fromDate, toDate, category } = req.query;
+
+    // Query to fetch data for the analysis within the specified date range
+    let query = `
+        SELECT category, SUM(amount) AS total_amount
+        FROM expenses
+        WHERE date >= ? AND date <= ?
+        GROUP BY category
+    `;
+
+    const queryParams = [fromDate, toDate];
+
+    db.query(query, queryParams, (err, results) => {
+        if (err) {
+            console.error('Error retrieving graph data:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+
+        res.json(results);
+    });
+});
+
+
+// Route to perform financial analysis
+app.post('/analyzeFinancialData', (req, res) => {
+    // Extract financial data from request body
+    const { data } = req.body;
+
+    // Spawn a Python process to execute the analysis script
+    const pythonProcess = spawn('python', ['analysis.py', JSON.stringify(data)]);
+
+    // Capture stdout data from the Python script
+    pythonProcess.stdout.on('data', (result) => {
+        // Send analysis result back to client
+        res.json({ result: result.toString() });
+    });
+
+    // Handle any errors from the Python process
+    pythonProcess.on('error', (error) => {
+        console.error('Python process error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     });
 });
 

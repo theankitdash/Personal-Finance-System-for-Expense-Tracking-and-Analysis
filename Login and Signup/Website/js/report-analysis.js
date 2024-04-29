@@ -1,45 +1,65 @@
-// JavaScript for financial spending analysis
-
 document.addEventListener('DOMContentLoaded', function() {
-    // Sample data for the graph
-    const labels = ['January', 'February', 'March', 'April', 'May', 'June'];
-    const data = [1000, 1500, 1200, 1800, 2000, 1600];
-  
-    // Function to update the graph
-    function updateGraph() {
-      // Code to update the graph based on selected date range
-      // For demonstration purposes, let's just redraw the same graph with sample data
-      const ctx = document.getElementById('graph').getContext('2d');
-      const graph = new Chart(ctx, {
-        type: 'line',
+  // Add event listener to the form submission
+  document.getElementById('date-form').addEventListener('submit', function(event) {
+      event.preventDefault(); // Prevent default form submission behavior
+      
+      // Fetch and render expense data
+      fetchExpensesData();
+  });
+});
+
+function fetchExpensesData() {
+  const fromDate = document.getElementById('from-date').value;
+  const toDate = document.getElementById('to-date').value;
+
+  // Fetch expenses data within the specified time period
+  fetch(`/expensesData?fromDate=${fromDate}&toDate=${toDate}`)
+      .then(response => response.json())
+      .then(data => {
+          // Process the data and create the bar graph
+          renderPieChart(data);
+      })
+      .catch(error => {
+          console.error('Error fetching expenses:', error);
+      });
+}
+
+function renderPieChart(expenses) {
+    const ctx = document.getElementById('graph').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
         data: {
-          labels: labels,
-          datasets: [{
-            label: 'Monthly Spending',
-            data: data,
-            fill: false,
-            borderColor: 'rgb(75, 192, 192)',
-            tension: 0.1
-          }]
+            labels: expenses.map(expense => expense.category),
+            datasets: [{
+                label: 'Total Spent',
+                data: expenses.map(expense => expense.total_amount),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)'
+                    // Add more colors if you have more categories
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                    // Add more colors if you have more categories
+                ],
+                borderWidth: 1
+            }]
         },
         options: {
-          scales: {
-            y: {
-              beginAtZero: true
+            scales: {
+                yAxes: [{
+                    display: false
+                }]
             }
-          }
         }
-      });
-    }
-  
-    // Handle form submission
-    const form = document.getElementById('date-form');
-    form.addEventListener('submit', function(event) {
-      event.preventDefault(); // Prevent default form submission behavior
-      updateGraph(); // Update the graph
     });
-  
-    // Initial graph rendering
-    updateGraph();
-  });
-  
+}
