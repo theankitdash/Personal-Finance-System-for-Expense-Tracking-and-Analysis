@@ -321,7 +321,7 @@ app.get('/expensesData', (req, res) => {
     }
 
     // Fetch data for the analysis based on selected date range
-    const { fromDate, toDate, category } = req.query;
+    const { fromDate, toDate } = req.query;
 
     // Query to fetch data for the analysis within the specified date range
     let query = `
