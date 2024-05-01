@@ -18,6 +18,9 @@ function fetchExpensesData() {
       .then(data => {
           // Process the data and create the bar graph
           renderPieChart(data);
+
+          // Update analysis results
+          updateAnalysisResults(data);
       })
       .catch(error => {
           console.error('Error fetching expenses:', error);
@@ -63,3 +66,15 @@ function renderPieChart(expenses) {
         }
     });
 }
+
+
+function updateAnalysisResults(data) {
+    const analysisResultsDiv = document.getElementById('analysis-results');
+    // Clear previous results
+    analysisResultsDiv.innerHTML = '';
+    // Display analysis results
+    const resultParagraph = document.createElement('p');
+    resultParagraph.textContent = `Total Categories: ${data.length}`;
+    analysisResultsDiv.appendChild(resultParagraph);
+}
+  

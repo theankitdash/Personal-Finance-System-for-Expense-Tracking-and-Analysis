@@ -1,20 +1,23 @@
-# analysis.py
-
 import sys
 import json
 
 def financial_analysis(data):
-    # Perform financial analysis here
-    # For example, calculate the total amount of expenses
-    total_expenses = sum(entry['amount'] for entry in data)
-    return total_expenses
+    # Parse JSON data
+    expenses_data = json.loads(data)
+
+    # Perform analysis on expenses data
+    total_amount = sum(entry['total_amount'] for entry in expenses_data)
+    average_amount = total_amount / len(expenses_data)
+
+    # Example analysis: Return total amount and average amount
+    return {'total_amount': total_amount, 'average_amount': average_amount}
 
 if __name__ == "__main__":
     # Read financial data from command line argument
-    data = json.loads(sys.argv[1])
+    data = sys.argv[1]
 
     # Perform financial analysis
     result = financial_analysis(data)
 
     # Print the result
-    print(result)
+    print(json.dumps(result))
