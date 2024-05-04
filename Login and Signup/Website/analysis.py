@@ -9,9 +9,11 @@ def financial_analysis(data):
     total_amount = sum(entry['total_amount'] for entry in expenses_data)
     average_amount = total_amount / len(expenses_data)
 
-    # Example analysis: Return total amount and average amount
-    return {'total_amount': total_amount, 'average_amount': average_amount}
+    # Construct analysis result message
+    analysis_result = f"Total Amount: {total_amount}, Average Amount: {average_amount}"
 
+    return analysis_result
+    
 if __name__ == "__main__":
     # Read financial data from command line argument
     data = sys.argv[1]
@@ -20,4 +22,4 @@ if __name__ == "__main__":
     result = financial_analysis(data)
 
     # Print the result
-    print(json.dumps(result))
+    print(result)

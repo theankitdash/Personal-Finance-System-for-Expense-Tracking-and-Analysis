@@ -350,12 +350,24 @@ app.post('/analyzeFinancialData', (req, res) => {
     const { data } = req.body;
 
     // Spawn a Python process to execute the analysis script
-    const pythonProcess = spawn('python', ['analysis.py', JSON.stringify(data)]);
+    const pythonProcess = spawn('python', ['analysis.py', data]);
+
+    let analysisResult = '';
 
     // Capture stdout data from the Python script
     pythonProcess.stdout.on('data', (result) => {
-        // Send analysis result back to client
-        res.json({ result: result.toString() });
+        analysisResult += result.toString();
+    });
+
+    // When Python process ends
+    pythonProcess.on('close', (code) => {
+        if (code !== 0) {
+            console.error('Python process exited with error code:', code);
+            res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+            // Send analysis result back to client
+            res.send(analysisResult);
+        }
     });
 
     // Handle any errors from the Python process

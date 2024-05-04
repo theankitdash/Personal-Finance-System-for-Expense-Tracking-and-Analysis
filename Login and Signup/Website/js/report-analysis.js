@@ -74,7 +74,18 @@ function updateAnalysisResults(data) {
     analysisResultsDiv.innerHTML = '';
     // Display analysis results
     const resultParagraph = document.createElement('p');
-    resultParagraph.textContent = `Total Categories: ${data.length}`;
+    if (typeof data === 'string') {
+        // If data is a string, directly display it
+        resultParagraph.textContent = "Analysis Result: " + data;
+    } else if (typeof data === 'object') {
+        // If data is an object, format it as a string and display
+        resultParagraph.textContent = "Analysis Result: " + JSON.stringify(data);
+    } else {
+        // Handle other types of data
+        resultParagraph.textContent = "Unknown data type received";
+    }
+    
     analysisResultsDiv.appendChild(resultParagraph);
 }
+
   
