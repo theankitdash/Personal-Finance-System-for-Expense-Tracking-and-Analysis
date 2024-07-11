@@ -343,14 +343,15 @@ app.get('/expensesData', (req, res) => {
     });
 });
 
-
 // Route to perform financial analysis
 app.post('/analyzeFinancialData', (req, res) => {
     // Extract financial data from request body
     const { data } = req.body;
 
+    console.log(`Data to be analyzed: ${JSON.stringify(data)}`);
+
     // Spawn a Python process to execute the analysis script
-    const pythonProcess = spawn('python', ['analysis.py', data]);
+    const pythonProcess = spawn('python', ['analysis.py', JSON.stringify(data)]);
 
     let analysisResult = '';
 
@@ -359,14 +360,24 @@ app.post('/analyzeFinancialData', (req, res) => {
         analysisResult += result.toString();
     });
 
+    pythonProcess.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+
     // When Python process ends
     pythonProcess.on('close', (code) => {
         if (code !== 0) {
             console.error('Python process exited with error code:', code);
             res.status(500).json({ error: 'Internal Server Error' });
         } else {
-            // Send analysis result back to client
-            res.send(analysisResult);
+            try {
+                // Send the result back to the client as plain text
+                res.set('Content-Type', 'text/plain');
+                res.send(analysisResult);
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
         }
     });
 

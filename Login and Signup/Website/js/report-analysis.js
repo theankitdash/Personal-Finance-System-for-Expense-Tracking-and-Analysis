@@ -19,8 +19,8 @@ function fetchExpensesData() {
           // Process the data and create the bar graph
           renderPieChart(data);
 
-          // Update analysis results
-          updateAnalysisResults(data);
+          // Fetch and update analysis results
+          fetchAndUpdateAnalysisResults(data);
       })
       .catch(error => {
           console.error('Error fetching expenses:', error);
@@ -67,24 +67,33 @@ function renderPieChart(expenses) {
     });
 }
 
+async function fetchAndUpdateAnalysisResults(expensesData) {
+    try {
+        const response = await fetch('/analyzeFinancialData', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ data: expensesData }) 
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.text();
+        updateAnalysisResults(result);
+    } catch (error) {
+        console.error('Error fetching analysis results:', error);
+    }
+}
+
 
 function updateAnalysisResults(data) {
     const analysisResultsDiv = document.getElementById('analysis-results');
-    // Clear previous results
     analysisResultsDiv.innerHTML = '';
-    // Display analysis results
     const resultParagraph = document.createElement('p');
-    if (typeof data === 'string') {
-        // If data is a string, directly display it
-        resultParagraph.textContent = data;
-    } else if (typeof data === 'object') {
-        // If data is an object, format it as a string and display
-        resultParagraph.textContent = JSON.stringify(data);
-    } else {
-        // Handle other types of data
-        resultParagraph.textContent = "Unknown data type received";
-    }
-    
+    resultParagraph.textContent = data;
     analysisResultsDiv.appendChild(resultParagraph);
 }
 
