@@ -14,6 +14,7 @@ body {
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  
 }
 
 .form-container {
@@ -23,6 +24,7 @@ body {
 #formTitle {
   text-align: center;
   color: #333;
+  margin-bottom: 20px; /* Provide some spacing below the title */
 }
 
 form {
@@ -34,7 +36,7 @@ label {
   margin-bottom: 8px;
 }
 
-input {
+input, button {
   padding: 10px;
   margin-bottom: 16px;
   border: 1px solid #ccc;
@@ -44,10 +46,12 @@ input {
 button {
   background-color: black;
   color: #fff;
-  padding: 10px;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
+}
+
+button:hover {
+  background-color: #333; /* Darken color on hover */
 }
 
 #toggleFormText {
@@ -59,4 +63,8 @@ button {
 a {
   color: black;
   text-decoration: underline;
+}
+
+a:hover {
+  color: #333; /* Darken color on hover */
 }

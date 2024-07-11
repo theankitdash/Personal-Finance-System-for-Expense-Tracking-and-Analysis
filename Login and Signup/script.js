@@ -48,6 +48,7 @@ async function authenticateUser(phone, password, action) {
 
 async function submitForm(event) {
     event.preventDefault();
+
     const phone = document.getElementById('phone').value;
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
@@ -85,17 +86,21 @@ async function submitForm(event) {
                 window.location.href = 'Website/account-settings.html';
             }
         } else {
-            if (action === 'login' && response.message === 'Invalid credentials') {
-                alert('Incorrect password. Please check your password and try again.');
-            } else if (!isLoginForm && response.message === 'Phone number already exists') {
-                alert('This phone number is already registered. Please use a different phone number or log in with your existing account.');
-            } else {
-                alert(`${action.charAt(0).toUpperCase() + action.slice(1)} failed. Please check your credentials.`);
-            }
+            handleAuthError(response, action);
         }
     } catch (error) {
         console.error('Error:', error);
         alert('An error occurred. Please try again.');
+    }
+}
+
+function handleAuthError(response, action) {
+    if (action === 'login' && response.message === 'Invalid credentials') {
+        alert('Incorrect password. Please check your password and try again.');
+    } else if (!isLoginForm && response.message === 'Phone number already exists') {
+        alert('This phone number is already registered. Please use a different phone number or log in with your existing account.');
+    } else {
+        alert(`${action.charAt(0).toUpperCase() + action.slice(1)} failed. Please check your credentials.`);
     }
 }
 

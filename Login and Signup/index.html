@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Login and Signup page for user authentication.">
         <title>Login and Signup Page</title>
         <link rel="stylesheet" href = "style.css">
     </head>
@@ -14,13 +15,13 @@
                 <form id="authForm" onsubmit="submitForm(event)">
 
                     <label for="phone">Phone Number:</label>
-                    <input type="tel" id="phone" name="phone" required>   
+                    <input type="tel" id="phone" name="phone" required aria-label="Phone Number" pattern="[0-9]{10}">   
 
                     <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="password" name="password" required aria-label="Password">
 
                     <label id="confirmPasswordLabel" for="confirmPassword" style="display:none;">Confirm Password:</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" style="display:none;">
+                    <input type="password" id="confirmPassword" name="confirmPassword" style="display:none;" aria-label="Confirm Password">
 
                     <button type="submit" id="submitButton">Login</button>
                 </form>
