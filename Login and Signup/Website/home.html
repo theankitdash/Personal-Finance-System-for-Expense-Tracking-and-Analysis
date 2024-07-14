@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Track your finances with interactive charts and reports.">
   <title>Finance Tracker</title>
   <link rel="stylesheet" href ='css/home.css' >
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,23 +12,23 @@
   <header>
     <div class="user-info">
       <h1>Welcome, <span id="name"></span></h1>
-      <nav class="top-menu">
+    </div>
+  </header>
+
+  <div class="main-content">
+    <nav class="side-menu">
         <ul>
           <li><a href='Expenses.html'>Expenses and History</a></li>
           <li><a href='report-analysis.html'>Report and Analysis</a></li>
           <li><a href='account-settings.html'>Account Settings</a></li>
         </ul>
       </nav>
+    
+      <div class="container">
+        <canvas id="expenseChart"></canvas>
+      </div>
     </div>
-  </header>
-
-  <div class="container">
-    <canvas id="expenseChart"></canvas>
-  </div>
-
-  <footer>
-    <p>&copy; 2024 Finance Tracker. All rights reserved.</p>
-  </footer> 
+  
   <script src='js/home.js'></script>
 </body>
 </html>

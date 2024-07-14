@@ -79,12 +79,42 @@ function renderBarGraph(expenses) {
     },
     options: {
       scales: {
-        yAxes: [{
+        y: {
+          beginAtZero: true,
           ticks: {
-            beginAtZero: true
+            color: '#e0e0e0', // Light text color for dark background
+            font: {
+              weight: 'bold' // Make font bold
+            }
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)' // Light grid lines
           }
-        }]
-      }
+        },
+        x: {
+          ticks: {
+            color: '#e0e0e0', // Light text color for dark background
+            font: {
+              weight: 'bold' // Make font bold
+            }
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)' // Light grid lines
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#e0e0e0', // Light text color for legend
+            font: {
+              weight: 'bold' // Make font bold
+            }
+          }
+        }
+      },
+      responsive: true,
+      maintainAspectRatio: false
     }
   });
 }
