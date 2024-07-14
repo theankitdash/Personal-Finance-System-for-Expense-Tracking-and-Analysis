@@ -82,31 +82,31 @@ function renderBarGraph(expenses) {
         y: {
           beginAtZero: true,
           ticks: {
-            color: '#e0e0e0', // Light text color for dark background
+            color: '#333', // Light text color for dark background
             font: {
               weight: 'bold' // Make font bold
             }
           },
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)' // Light grid lines
+            color: 'rgba(0, 0, 0, 0.1)' // Dark grid lines for contrast
           }
         },
         x: {
           ticks: {
-            color: '#e0e0e0', // Light text color for dark background
+            color: '#333', // Dark text color for light background
             font: {
               weight: 'bold' // Make font bold
             }
           },
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)' // Light grid lines
+            color: 'rgba(0, 0, 0, 0.1)' // Dark grid lines for contrast
           }
         }
       },
       plugins: {
         legend: {
           labels: {
-            color: '#e0e0e0', // Light text color for legend
+            color: '#333', // Dark text color for legend
             font: {
               weight: 'bold' // Make font bold
             }

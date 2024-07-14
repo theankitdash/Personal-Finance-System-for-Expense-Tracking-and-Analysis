@@ -2,8 +2,8 @@
 body {
   font-family: Arial, sans-serif;
   margin: 0;
-  background-color: #121212; /* Dark background color */
-  color: #e0e0e0; /* Light text color for contrast */
+  background-color: #f0f0f0; 
+  color: #333; 
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -13,11 +13,11 @@ body {
 
 /* Style the header */
 header {
-  background-color: #1f1f1f; /* Darker background color */
-  color: white;
+  background-color: white; 
+  color: #333;
   padding: 20px 0;
   text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Slightly darker shadow for contrast */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
 }
 
 header .user-info {
@@ -46,11 +46,11 @@ header .user-info h1 {
 
 /* Style the side menu */
 .side-menu {
-  background-color: #2b2f33; /* Darker gray */
+  background-color: white; 
   padding: 20px;
   min-width: 200px;
-  color: white;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3); /* Slightly darker shadow */
+  color: black;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); 
 }
 
 .side-menu ul {
@@ -63,7 +63,7 @@ header .user-info h1 {
 }
 
 .side-menu ul li a {
-  color: #bfc3c7; /* Lighter gray for text */
+  color: black; 
   text-decoration: none;
   font-weight: 500;
   padding: 10px 15px;
@@ -72,18 +72,17 @@ header .user-info h1 {
 }
 
 .side-menu ul li a:hover {
-  background-color: #444a50; /* Slightly lighter gray for hover */
+  background-color: #ddd; 
 }
-
 
 /* Style the container for the chart */
 .container {
   flex: 1;
   margin: 40px;
   padding: 20px;
-  background-color: #1f1f1f; /* Dark background for the container */
+  background-color: white; 
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); /* Slightly stronger shadow for contrast */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
   display: flex;
   justify-content: center;
   align-items: center;
