@@ -1,12 +1,20 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Add event listener to the form submission
-  document.getElementById('date-form').addEventListener('submit', function(event) {
-      event.preventDefault(); // Prevent default form submission behavior
-      
-      // Fetch and render expense data
-      fetchExpensesData();
-  });
+    // Add event listener to the form submission
+    document.getElementById('date-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent default form submission behavior
+        
+        // Fetch and render expense data
+        fetchExpensesData();
+    });
+
+    // Add event listener to the analyze button
+    document.getElementById('analyze-btn').addEventListener('click', function() {
+        // Fetch and update analysis results
+        const expensesData = JSON.parse(document.getElementById('graph').dataset.expenses);
+        fetchAndUpdateAnalysisResults(expensesData);
+    });
 });
+
 
 function fetchExpensesData() {
   const fromDate = document.getElementById('from-date').value;
@@ -19,8 +27,11 @@ function fetchExpensesData() {
           // Process the data and create the bar graph
           renderPieChart(data);
 
-          // Fetch and update analysis results
-          fetchAndUpdateAnalysisResults(data);
+          // Show the analyze button after rendering the graph
+          document.getElementById('analyze-btn').style.display = 'inline-block';
+
+          // Store the expenses data in the graph element's dataset for later use
+          document.getElementById('graph').dataset.expenses = JSON.stringify(data);
       })
       .catch(error => {
           console.error('Error fetching expenses:', error);
@@ -95,6 +106,9 @@ function updateAnalysisResults(data) {
     const resultParagraph = document.createElement('p');
     resultParagraph.textContent = data;
     analysisResultsDiv.appendChild(resultParagraph);
+
+    // Show the analysis section
+    document.getElementById('analysis-section').style.display = 'block';
 }
 
   

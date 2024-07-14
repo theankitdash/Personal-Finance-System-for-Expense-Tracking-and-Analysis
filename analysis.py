@@ -52,8 +52,12 @@ def financial_analysis(data):
     for category, predicted in zip(categories, future_expenses):
         analysis_result += f"  {category}: {predicted:.2f}\n"
     analysis_result += "\nSuggestions:\n"
-    for suggestion in suggestions:
-        analysis_result += f"  - {suggestion}\n"
+    if suggestions:
+        analysis_result += "\nSuggestions:\n"
+        for suggestion in suggestions:
+            analysis_result += f"  - {suggestion}\n"
+    else:
+        analysis_result += "\nNo suggestions for reducing expenses."
 
     return analysis_result
 

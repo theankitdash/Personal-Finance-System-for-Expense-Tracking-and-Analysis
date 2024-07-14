@@ -15,15 +15,20 @@
             <label for="to-date">To:</label>
             <input type="date" id="to-date" name="to-date" required>
             <button id="submit-btn" type="submit">Submit</button>
+            <button id="analyze-btn"  type="button" style="display: none;">Analyze</button>
         </form>
-        <div id="graph-container">
-            <!-- Graphs will be displayed here -->
-            <canvas id="graph"></canvas>
-        </div>
-        <div id="analysis-container">
-            <h2>Analysis Results</h2>
-            <div id="analysis-results">
-                <!-- Analysis results will be displayed here -->
+        <div class="content">
+            <div id="graph-container">
+                <!-- Graphs will be displayed here -->
+                <canvas id="graph" aria-label="Financial spending analysis graph"></canvas>
+            </div>
+            <div id="analysis-section" style="display: none;">
+                <section>
+                    <h2>Analysis Results</h2>
+                    <div id="analysis-results" role="region" aria-live="polite">
+                        <!-- Analysis results will be displayed here -->
+                    </div>
+                </section>
             </div>
         </div>
     </div>

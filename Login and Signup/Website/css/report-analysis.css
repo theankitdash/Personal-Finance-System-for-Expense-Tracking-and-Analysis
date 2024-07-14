@@ -1,56 +1,64 @@
-/* Style the container */
-.container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
-/* Style the heading */
-h1 {
+.container {
+  width: 90%;
+  margin: 0 auto;
   text-align: center;
 }
 
-/* Style the form */
 #date-form {
   margin-bottom: 20px;
-  text-align: center;
 }
 
 #date-form label {
   margin-right: 10px;
 }
 
-#date-form button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  cursor: pointer;
+#date-form input {
+  margin-right: 10px;
 }
 
-/* Style the graph container */
+#submit-btn {
+  padding: 5px 10px;
+}
+
+#analyze-btn {
+  padding: 5px 10px;
+  margin-left: 10px;
+  display: none; /* Initially hidden */
+}
+
+.content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+#graph-container, #analysis-section {
+  flex: 1;
+  margin: 10px;
+}
+
 #graph-container {
-  text-align: center;
+  max-width: 40%;
 }
 
-#graph {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-/* Style the analysis container */
-#analysis-container {
+#analysis-section {
+  max-width: 50%;
+  display: none;
   margin-top: 20px;
-  text-align: center;
 }
 
-#analysis-container h2 {
-  margin-bottom: 10px;
-}
+@media (max-width: 768px) {
+  .content {
+      flex-direction: column;
+  }
 
-#analysis-results {
-  border: 1px solid #ccc;
-  padding: 10px;
-  background-color: #f9f9f9;
-  border-radius: 5px;
+  #graph-container, #analysis-section {
+      max-width: 100%;
+  }
 }
