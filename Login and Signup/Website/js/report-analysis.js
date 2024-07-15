@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+let chartInstance = null;
 
 function fetchExpensesData() {
   const fromDate = document.getElementById('from-date').value;
@@ -40,7 +41,14 @@ function fetchExpensesData() {
 
 function renderPieChart(expenses) {
     const ctx = document.getElementById('graph').getContext('2d');
-    new Chart(ctx, {
+
+    // Destroy the previous chart instance if it exists
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    // Create a new chart instance
+    chartInstance = new Chart(ctx, {
         type: 'pie',
         data: {
             labels: expenses.map(expense => expense.category),
