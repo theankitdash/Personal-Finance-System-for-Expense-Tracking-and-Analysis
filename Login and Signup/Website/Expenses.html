@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="css/Expenses.css">
 </head>
 <body>
-    <div class="container">
-        <section class="expenses">
+    <aside class="expenses">
+        <div class="expenses">
             <header>
                 <h2>Expenses</h2>
             </header>
@@ -41,8 +41,10 @@
                 </div>
                 <button id="saveExpenseBtn" type="submit">Add Expense</button>
             </form>
-        </section>
+        </div>
+    </aside>
 
+    <main class="main-content">
         <section class="expenses-history">
             <header>
                 <h2>Expenses History</h2>
@@ -73,7 +75,8 @@
                 <tbody id="expensesTableBody"></tbody>
             </table>
         </section>
-    </div>
+    </main>
+    
     <script src="js/Expenses.js"></script>
 </body>
 </html>
