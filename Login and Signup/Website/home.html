@@ -9,24 +9,30 @@
 </head>
 <body>
   <header>
-    <div class="user-info">
-      <h1>Welcome, <span id="name"></span></h1>
+    <div class="left-header">
+      <p>&copy; Finance Tracker</p>
     </div>
-  </header>
-
-  <div class="main-content">
-    <nav class="side-menu">
+    <div class="right-header">
+      <nav class="header-menu">
         <ul>
           <li><a href='Expenses.html'>Expenses and History</a></li>
           <li><a href='report-analysis.html'>Report and Analysis</a></li>
           <li><a href='account-settings.html'>Account Settings</a></li>
         </ul>
       </nav>
-    
-      <div class="container">
+    </div>
+  </header>
+
+  <div class="main-content">
+    <div class="content-section">
+      <div class="welcome-section">
+        <h1>Hi.There,<br> Welcome  <span id="name"></span></h1>
+      </div>
+      <div class="chart-section">
         <canvas id="expenseChart"></canvas>
       </div>
     </div>
+  </div>
   
   <script src='js/home.js'></script>
 </body>

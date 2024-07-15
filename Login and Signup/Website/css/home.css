@@ -18,52 +18,36 @@ header {
   padding: 20px 0;
   text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
-}
-
-header .user-info {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
+  padding: 0 20px;
 }
 
-header .user-info h1 {
-  margin: 0;
-  font-size: 1.5em;
-}
-
-/* Style the main content layout */
-.main-content {
-  display: flex;
+.left-header {
   flex: 1;
-  flex-direction: column;
+  text-align: left;
 }
 
-@media (min-width: 768px) {
-  .main-content {
-    flex-direction: row;
-  }
+.right-header {
+  flex: 1;
+  text-align: right;
 }
 
-/* Style the side menu */
-.side-menu {
-  background-color: white; 
-  padding: 20px;
-  min-width: 200px;
-  color: black;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); 
-}
-
-.side-menu ul {
+.header-menu ul {
   list-style-type: none;
+  margin: 0;
   padding: 0;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.side-menu ul li {
-  margin-bottom: 20px;
+.header-menu ul li {
+  margin-left: 20px;
 }
 
-.side-menu ul li a {
-  color: black; 
+.header-menu ul li a {
+  color: #333; 
   text-decoration: none;
   font-weight: 500;
   padding: 10px 15px;
@@ -71,27 +55,77 @@ header .user-info h1 {
   transition: background-color 0.3s;
 }
 
-.side-menu ul li a:hover {
+.header-menu ul li a:hover {
   background-color: #ddd; 
 }
 
-/* Style the container for the chart */
-.container {
+/* Style the main content layout */
+.main-content {
+  display: flex;
   flex: 1;
-  margin: 40px;
+  flex-direction: column;
+  padding: 5px;
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    flex-direction: row;
+    justify-content: center; /* Center the content horizontally */
+    align-items: center; /* Center the content vertically */
+  }
+}
+
+/* Unified content section */
+.content-section {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
   padding: 20px;
-  background-color: white; 
+  margin: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+  width: 100%; /* Ensure full width */
+  
+}
+
+@media (min-width: 768px) {
+  .content-section {
+    flex-direction: row;
+  }
+}
+
+/* Style the welcome section */
+.welcome-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.welcome-section h1 {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+/* Style the chart section */
+.chart-section {
+  flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 20px;
 }
 
 /* Media query for smaller screens */
 @media (max-width: 768px) {
-  .container {
-    margin: 20px;
+  .main-content {
+    flex-direction: column;
+  }
+
+  .content-section {
+    margin: 10px;
     padding: 10px;
   }
 
