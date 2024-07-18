@@ -29,7 +29,7 @@ body {
 #analyze-btn {
   padding: 5px 10px;
   margin-left: 10px;
-  display: none; /* Initially hidden */
+  display: none; 
 }
 
 .content {
