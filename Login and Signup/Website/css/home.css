@@ -55,8 +55,10 @@ header {
   transition: background-color 0.3s;
 }
 
-.header-menu ul li a:hover {
-  background-color: #ddd; 
+.header-menu ul li a:hover,
+.header-menu ul li a:focus {
+  background-color: #ddd;
+  outline: none;
 }
 
 /* Style the main content layout */
@@ -70,8 +72,8 @@ header {
 @media (min-width: 768px) {
   .main-content {
     flex-direction: row;
-    justify-content: center; /* Center the content horizontally */
-    align-items: center; /* Center the content vertically */
+    justify-content: center; 
+    align-items: center; 
   }
 }
 
@@ -139,4 +141,10 @@ header {
   width: 100%;
   height: auto;
   max-width: 600px;
+}
+
+/* Ensure focus styles for accessibility */
+a:focus {
+  outline: 2px solid #333;
+  outline-offset: 2px;
 }
