@@ -1,18 +1,20 @@
+/* Reset and basic styles */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
   display: flex;
   min-height: 100vh;
-  background-color: white;
+  background-color: #f5f5f5; 
 }
 
+/* Sidebar for expenses */
 aside.expenses {
   width: 250px;
-  background-color: white;
-  color: black;
+  background-color: #ffffff; 
+  color: #333; 
   padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
 }
 
 aside.expenses header {
@@ -22,6 +24,7 @@ aside.expenses header {
 aside.expenses h2 {
   font-size: 1.5em;
   margin: 0;
+  color: #333; 
 }
 
 aside.expenses .form-group {
@@ -32,38 +35,40 @@ aside.expenses label {
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
+  color: #555; 
 }
 
 aside.expenses input,
 aside.expenses select {
   width: calc(100% - 10px);
   padding: 8px;
-  border: black solid;
-  border-radius: 1px;
+  border: 1px solid #ccc; 
+  border-radius: 3px;
 }
 
 aside.expenses button {
   width: 100%;
   padding: 10px;
-  background-color: white ;
-  border: black solid;
+  background-color: #3498db; 
+  border: none;
   border-radius: 3px;
-  color: black;
+  color: #fff; 
   font-size: 1em;
   cursor: pointer;
+  transition: background-color 0.3s ease; 
 }
 
 aside.expenses button:hover {
-  background-color: black;
-  border: ridge;
-  color: white;
+  background-color: #2980b9; 
 }
 
+/* Main content area */
 .main-content {
   flex: 1;
   padding: 20px;
 }
 
+/* Expenses history section */
 .expenses-history header {
   margin-bottom: 20px;
 }
@@ -71,6 +76,7 @@ aside.expenses button:hover {
 .expenses-history h2 {
   font-size: 1.5em;
   margin: 0;
+  color: #333; 
 }
 
 .expenses-history .filter {
@@ -80,45 +86,50 @@ aside.expenses button:hover {
 .expenses-history label {
   margin-right: 10px;
   font-weight: bold;
+  color: #555; 
 }
 
 .expenses-history select {
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid #ccc; 
   border-radius: 3px;
 }
 
+/* Table styles */
 table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 20px; 
 }
 
 table th, table td {
   padding: 10px;
   text-align: left;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #ddd; 
 }
 
 table th {
-  background-color: white;
-  color: black;
+  background-color: #f9f9f9; 
+  color: #333; 
 }
 
 table tbody tr:hover {
-  background-color: #f2f2f2;
+  background-color: #f2f2f2; 
 }
 
+/* Responsive layout for smaller screens */
 @media (max-width: 768px) {
   body {
-      flex-direction: column;
+    flex-direction: column; 
   }
 
   aside.expenses {
-      width: 100%;
-      box-shadow: none;
+    width: 100%; 
+    box-shadow: none; 
+    margin-bottom: 20px; 
   }
 
   .main-content {
-      padding: 10px;
+    padding: 10px; 
   }
 }
