@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to format date as YYYY-MM-DD
     function formatDate(date) {
-        if (!date) return ''; // Return empty string if date is not provided
+        if (!date) return ''; 
         const d = new Date(date);
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');

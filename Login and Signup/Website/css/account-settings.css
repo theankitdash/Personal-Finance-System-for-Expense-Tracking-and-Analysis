@@ -25,20 +25,6 @@ h1 {
     text-align: center;
 }
 
-.login-info {
-    background-color: #f9f9f9;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px;
-}
-
-.login-info h2 {
-    font-size: 20px;
-    color: #555;
-    margin-bottom: 20px;
-}
-
 .section {
     margin-bottom: 30px;
 }
@@ -52,6 +38,8 @@ h1 {
 }
 
 .setting {
+    display: flex;
+    align-items: center;
     margin-bottom: 15px;
 }
 
@@ -62,8 +50,10 @@ h1 {
 }
 
 .setting input[type="text"],
-.setting input[type="password"] {
-    width: calc(100% - 210px);
+.setting input[type="password"]
+.setting input[type="date"],
+.setting select {
+    flex: 1;
     max-width: 300px;
     padding: 8px;
     border: 1px solid #ccc;
@@ -78,24 +68,17 @@ h1 {
     border-radius: 5px;
     cursor: pointer;
     font-size: 14px;
+    transition: background-color 0.3s;
 }
 
-.setting button:hover {
+.setting button:hover,
+.logout button:hover {
     background-color: #2980b9;
-}
-
-.submit button {
-    padding: 10px 20px;
-    background-color: #e74c3c;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
 }
 
 .logout {
     text-align: center;
+    margin-top: 20px;
 }
 
 .logout button {
@@ -106,8 +89,16 @@ h1 {
     border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
+    transition: background-color 0.3s;
 }
 
 .logout button:hover {
     background-color: #c0392b;
+}
+
+button:focus,
+input:focus,
+select:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
 }

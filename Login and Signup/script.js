@@ -1,49 +1,59 @@
 let isLoginForm = true;
 
-function toggleForm() {
-    isLoginForm = !isLoginForm;
-
+document.addEventListener('DOMContentLoaded', function() {
     const formTitle = document.getElementById('formTitle');
     const submitButton = document.getElementById('submitButton');
     const toggleFormText = document.getElementById('toggleFormText');
     const confirmPasswordLabel = document.getElementById('confirmPasswordLabel');
     const confirmPassword = document.getElementById('confirmPassword');
 
-    if (isLoginForm) {
-        formTitle.innerText = 'Login';
-        submitButton.innerText = 'Login';
-        toggleFormText.innerHTML = 'Don\'t have an account? <a href="#" onclick="toggleForm()">Register here</a>';
-        confirmPasswordLabel.style.display = 'none';
-        confirmPassword.style.display = 'none';
-       
-    } else {
-        formTitle.innerText = 'Register';
-        submitButton.innerText = 'Register';
-        toggleFormText.innerHTML = 'Already have an account? <a href="#" onclick="toggleForm()">Login here</a>';
-        confirmPasswordLabel.style.display = 'block';
-        confirmPassword.style.display = 'block';
+    // Add event listener for toggleFormText link clicks
+    toggleFormText.addEventListener('click', toggleForm);
+
+    function toggleForm(event) {
+        event.preventDefault();
+        isLoginForm = !isLoginForm;
+
+        if (isLoginForm) {
+            formTitle.innerText = 'Login';
+            submitButton.innerText = 'Login';
+            toggleFormText.innerHTML = 'Don\'t have an account? <a href="#">Register here</a>';
+            confirmPasswordLabel.style.display = 'none';
+            confirmPassword.style.display = 'none';
+        } else {
+            formTitle.innerText = 'Register';
+            submitButton.innerText = 'Register';
+            toggleFormText.innerHTML = 'Already have an account? <a href="#">Login here</a>';
+            confirmPasswordLabel.style.display = 'block';
+            confirmPassword.style.display = 'block';
+        }
     }
-}
+});
 
 async function authenticateUser(phone, password, action) {
     // Update API endpoint URL
     const apiUrl = `/auth/${action}`;
 
-    // Make request to server
-    const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({phone, password}),
-    });
+    try {
+        // Make request to server
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({phone, password}),
+        });
 
-    // Handle response
-    if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-    }
+        // Handle response
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
 
-    return response.json();
+        return response.json();
+    } catch (error) {
+        console.error('Error:', error);
+        throw new Error('An error occurred during authentication');
+    }    
 }
 
 async function submitForm(event) {

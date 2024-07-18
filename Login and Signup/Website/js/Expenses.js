@@ -8,7 +8,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
-    }    
+    } 
+    
+    // Function to handle fetch errors
+    function handleFetchError(error, message) {
+        console.error(message, error);
+        alert(`An error occurred: ${message}`);
+    }
 
     // Fetch current user's details
     fetch('/Details')
@@ -20,8 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     })
     .catch(error => {
-        console.error('Error fetching user details:', error);
-        alert('An error occurred while fetching user details');
+        handleFetchError(error, 'Error fetching user details');
     });
 
     // Add event listener to the form submission
@@ -33,6 +38,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const amount = document.getElementById('expenseAmount').value;
         const description = document.getElementById('expenseDescription').value;
         const category = document.getElementById('expenseCategory').value;
+
+        // Validate input values (optional)
+        if (!date || !amount || !description || !category) {
+            alert('Please fill out all fields');
+            return;
+        }
 
         // Send request to save expense
         fetch('/saveExpenses', {
@@ -59,8 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             // Handle error
-            console.error('Error saving expense:', error);
-            alert('An error occurred while saving expense');
+            handleFetchError(error, 'Error saving expense');
         });
     });
 
@@ -68,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateExpensesHistory() {
         // Fetch expenses history based on selected category
         const selectedCategory = document.getElementById('selectCategory').value;
-        const url = '/expensesHistory?category=' + selectedCategory;
+        const url = `/expensesHistory?category=${selectedCategory}`;
 
         fetch(url)
         .then(response => {
@@ -85,47 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Populate expenses table with fetched data
             expenses.forEach(expense => {
-                const row = document.createElement('tr');
-
-                // Format date string
                 const formattedDate = formatDate(expense.date);
-
-                // Create table cells for each expense attribute
-                const dateCell = document.createElement('td');
-                dateCell.textContent = formattedDate;
-                row.appendChild(dateCell);
-
-                const amountCell = document.createElement('td');
-                amountCell.textContent = expense.amount;
-                row.appendChild(amountCell);
-
-                const descriptionCell = document.createElement('td');
-                descriptionCell.textContent = expense.description;
-                row.appendChild(descriptionCell);
-
-/*                // Create receipt cell
-                const receiptCell = document.createElement('td');
-                if (expense.receipt) {
-                    // If receipt exists, create a link to view/download it
-                    const receiptLink = document.createElement('a');
-                    receiptLink.href = '/receipts/' + expense.receipt; // Update the href with the actual path to the receipt
-                    receiptLink.textContent = 'View Receipt';
-                    receiptCell.appendChild(receiptLink);
-                } else {
-                    receiptCell.textContent = 'N/A';
-                }
-                row.appendChild(receiptCell);  */
-
-                // Create action button
-                const actionCell = document.createElement('td');
-                const removeButton = document.createElement('button');
-                removeButton.textContent = 'Remove';
-                removeButton.addEventListener('click', function() {
-                    // Call function to remove expense when button is clicked
-                    removeExpense(expense.id);
-                });
-                actionCell.appendChild(removeButton);
-                row.appendChild(actionCell);
+                const row = createExpenseRow(expense, formattedDate);
 
                 // Append row to the table body
                 expensesTableBody.appendChild(row);
@@ -134,24 +105,42 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             // Handle error
-            console.error('Error fetching expenses history:', error);
-            alert('An error occurred while fetching expenses history');
+            handleFetchError(error, 'Error fetching expenses history');
         });
     }
 
-    // Add event listener to the category dropdown menu
-    const selectCategory = document.getElementById('selectCategory');
-    selectCategory.addEventListener('change', updateExpensesHistory);
+    // Create table row for each expense
+    function createExpenseRow(expense, formattedDate) {
+        const row = document.createElement('tr');
 
-    // Initial update of expenses history when the page loads
-    updateExpensesHistory();
+        // Create cells for each attribute
+        const dateCell = document.createElement('td');
+        dateCell.textContent = formattedDate;
+        row.appendChild(dateCell);
+
+        const amountCell = document.createElement('td');
+        amountCell.textContent = expense.amount;
+        row.appendChild(amountCell);
+
+        const descriptionCell = document.createElement('td');
+        descriptionCell.textContent = expense.description;
+        row.appendChild(descriptionCell);
+
+        //Action button
+        const actionCell = document.createElement('td');
+        const removeButton = document.createElement('button');
+        removeButton.textContent = 'Remove';
+        removeButton.addEventListener('click', () => removeExpense(expense.id));
+        actionCell.appendChild(removeButton);
+        row.appendChild(actionCell);
+
+        return row;
+    }
 
     // Function to remove expense
     function removeExpense(id) {
-        
-        // Send request to remove expense with the given id
-        fetch('/expenses/' + id, {
-            method: 'DELETE',    
+        fetch(`/expenses/${id}`, {
+            method: 'DELETE'
         })
         .then(response => {
             if (response.ok) {
@@ -164,8 +153,15 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             // Handle error
-            console.error('Error removing expense:', error);
-            alert('An error occurred while removing expense');
+            handleFetchError(error, 'Error removing expense');
         });
     }
+
+    // Add event listener to the category dropdown menu
+    const selectCategory = document.getElementById('selectCategory');
+    selectCategory.addEventListener('change', updateExpensesHistory);
+
+    // Initial update of expenses history when the page loads
+    updateExpensesHistory();
+
 });
