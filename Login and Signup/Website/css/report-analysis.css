@@ -4,6 +4,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh; 
+  overflow-x: hidden;
 }
 
 /* Style the header */
@@ -62,28 +63,39 @@ header {
   width: 100%;
   margin: 0 auto;
   padding: 20px;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .left-content {
-  flex: 1;
-  text-align: left;
+  flex-direction: column;
+  justify-content: center;
   margin-right: 20px;
+  max-width: 40%;
+  text-align: left;
 }
 
 .right-content {
-  flex: 1;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  max-width: 60%;
+  margin-left: 70px;
+  text-align: left;
 }
 
 #graph-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 400px;
-  width: 400px;
-  margin-top: 60px;
+  height: auto;
+  max-height: 500px; 
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+#graph {
+  max-width: 70%;
+  height: auto;
 }
 
 #date-form {
@@ -113,5 +125,6 @@ header {
 
   .left-content, .right-content {
       max-width: 100%;
+      margin-right: 0;
   }
 }
