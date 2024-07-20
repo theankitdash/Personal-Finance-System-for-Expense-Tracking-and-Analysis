@@ -57,27 +57,33 @@ header {
 }
 
 .container {
+  display: flex;
+  flex-direction: row;
   width: 100%;
   margin: 0 auto;
-  text-align: center;
+  padding: 20px;
 }
 
-/* Home button */
-.home-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: #3498db;
-  color: #fff;
-  padding: 10px 15px;
-  text-decoration: none;
-  border-radius: 5px;
-  font-size: 14px;
-  transition: background-color 0.3s ease;
+.left-content {
+  flex: 1;
+  text-align: left;
+  margin-right: 20px;
 }
 
-.home-button:hover {
-  background-color: #2980b9;
+.right-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#graph-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+  width: 400px;
+  margin-top: 60px;
 }
 
 #date-form {
@@ -96,39 +102,16 @@ header {
   padding: 5px 10px;
 }
 
-#analyze-btn {
-  padding: 5px 10px;
-  margin-left: 10px;
-  display: none; 
-}
-
-.content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-#graph-container, #analysis-section {
-  flex: 1;
-  margin: 10px;
-}
-
-#graph-container {
-  max-width: 40%;
-}
-
 #analysis-section {
-  max-width: 50%;
-  display: none;
   margin-top: 20px;
 }
 
 @media (max-width: 768px) {
-  .content {
+  .container {
       flex-direction: column;
   }
 
-  #graph-container, #analysis-section {
+  .left-content, .right-content {
       max-width: 100%;
   }
 }

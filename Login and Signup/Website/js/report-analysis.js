@@ -1,25 +1,34 @@
 document.addEventListener('DOMContentLoaded', function() {
-    
     const dateForm = document.getElementById('date-form');
-    const analyzeBtn = document.getElementById('analyze-btn');
+    const fromDateInput = document.getElementById('from-date');
+    const toDateInput = document.getElementById('to-date');
+
+    fromDateInput.addEventListener('change', handleDateChange);
+    toDateInput.addEventListener('change', handleDateChange);
 
     dateForm.addEventListener('submit', function(event) {
         event.preventDefault();
-        fetchExpensesData();
-    });
-
-    analyzeBtn.addEventListener('click', function() {
-        const expensesData = JSON.parse(document.getElementById('graph').dataset.expenses);
-        fetchAndUpdateAnalysisResults(expensesData);
+        const expensesData = JSON.parse(document.getElementById('graph').dataset.expenses || '[]');
+        if (expensesData.length > 0) {
+            fetchAndUpdateAnalysisResults(expensesData);
+        } else {
+            alert('Please select valid dates and generate the graph first.');
+        }
     });
 });
 
 let chartInstance = null;
 
-async function fetchExpensesData() {
+async function handleDateChange() {
     const fromDate = document.getElementById('from-date').value;
     const toDate = document.getElementById('to-date').value;
 
+    if (fromDate && toDate) {
+        await fetchExpensesData(fromDate, toDate);
+    }
+}
+
+async function fetchExpensesData(fromDate, toDate) {
     try {
         const response = await fetch(`/expensesData?fromDate=${fromDate}&toDate=${toDate}`);
         if (!response.ok) {
@@ -28,7 +37,6 @@ async function fetchExpensesData() {
 
         const data = await response.json();
         renderPieChart(data);
-        document.getElementById('analyze-btn').style.display = 'inline-block';
         document.getElementById('graph').dataset.expenses = JSON.stringify(data);
     } catch (error) {
         console.error('Error fetching expenses data:', error);
@@ -113,5 +121,3 @@ function updateAnalysisResults(data) {
     analysisResultsDiv.innerHTML = `<p>${data}</p>`;
     document.getElementById('analysis-section').style.display = 'block';
 }
-
-  

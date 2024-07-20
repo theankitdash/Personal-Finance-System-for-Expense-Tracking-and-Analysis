@@ -270,7 +270,7 @@ app.get('/expensesHistory', (req, res) => {
     const phone = req.session.phone;
     const category = req.query.category; // Retrieve selected category from query parameters
 
-    let query = 'SELECT id, date, amount, description FROM expenses WHERE phone = ?';
+    let query = 'SELECT id, date, amount, description FROM expenses WHERE phone = ? ORDER BY date DESC;';
     const queryParams = [phone];
 
     // If category is provided, add category filter to the query
