@@ -7,14 +7,27 @@
     <link rel="stylesheet" href="css/account-settings.css">
 </head>
 <body>
-    <a href="home.html" class="home-button">Home</a>
+    <header>
+        <div class="left-header">
+          <p>&copy; Finance Tracker</p>
+        </div>
+        <div class="right-header">
+          <nav class="header-menu" aria-label="Main Navigation">
+            <ul>
+                <li><a href='home.html'>Home</a></li>  
+              <li><a href='Expenses.html'>Expenses and History</a></li>
+              <li><a href='report-analysis.html'>Report and Analysis</a></li>
+            </ul>
+          </nav>
+        </div>
+    </header>
 
     <div class="container">
         <header>
             <h1>Account Settings</h1>
-            <section>
+            <div class="welcome-section">
                 <h2>Welcome, <span id="phoneNumber"></span></h2>
-            </section>
+            </div>
         </header>
 
         <form>

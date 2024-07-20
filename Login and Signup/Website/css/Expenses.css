@@ -1,38 +1,74 @@
 body {
   font-family: Arial, sans-serif;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Style the header */
+header {
+  background-color: white; 
+  color: #333;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.left-header {
+  flex: 1;
+  text-align: left;
+}
+
+.right-header {
+  flex: 1;
+  text-align: right;
+}
+
+.header-menu ul {
+  list-style-type: none;
+  margin: 0;
   padding: 0;
   display: flex;
-  min-height: 100vh;
-  background-color: #f5f5f5; 
-  position: relative;
+  justify-content: flex-end;
 }
 
-/* Home button */
-.home-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: #3498db;
-  color: #fff;
-  padding: 10px 15px;
+.header-menu ul li {
+  margin-left: 20px;
+}
+
+.header-menu ul li a {
+  color: #333; 
   text-decoration: none;
-  border-radius: 3px;
-  font-size: 1em;
-  transition: background-color 0.3s ease;
+  font-weight: 500;
+  padding: 10px 15px;
+  border-radius: 4px;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-.home-button:hover {
-  background-color: #2980b9;
+.header-menu ul li a:hover,
+.header-menu ul li a:focus {
+  background-color: #ddd;
+  color: #000;
+  outline: none;
+}
+
+.container {
+  display: flex;
+  min-height: calc(100vh - 80px); 
 }
 
 /* Sidebar for expenses */
 aside.expenses {
   width: 250px;
-  background-color: #ffffff; 
+  background-color: #fff; 
   color: #333; 
   padding: 20px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+  border-right: 1px solid #ddd;
 }
 
 aside.expenses header {
@@ -41,7 +77,6 @@ aside.expenses header {
 
 aside.expenses h2 {
   font-size: 1.5em;
-  margin: 0;
   color: #333; 
 }
 
@@ -58,7 +93,7 @@ aside.expenses label {
 
 aside.expenses input,
 aside.expenses select {
-  width: calc(100% - 10px);
+  width: calc(100% - 16px);
   padding: 8px;
   border: 1px solid #ccc; 
   border-radius: 3px;
@@ -93,7 +128,6 @@ aside.expenses button:hover {
 
 .expenses-history h2 {
   font-size: 1.5em;
-  margin: 0;
   color: #333; 
 }
 
@@ -137,7 +171,7 @@ table tbody tr:hover {
 
 /* Responsive layout for smaller screens */
 @media (max-width: 768px) {
-  body {
+  .container {
     flex-direction: column; 
   }
 

@@ -7,30 +7,68 @@
     <link rel="stylesheet" href="css/Expenses.css">
 </head>
 <body>
-    <a href="home.html" class="home-button">Home</a>
+    <header>
+        <div class="left-header">
+          <p>&copy; Finance Tracker</p>
+        </div>
+        <div class="right-header">
+          <nav class="header-menu" aria-label="Main Navigation">
+            <ul>
+              <li><a href='home.html'>Home</a></li>
+              <li><a href='report-analysis.html'>Report and Analysis</a></li>
+              <li><a href='account-settings.html'>Account Settings</a></li>
+            </ul>
+          </nav>
+        </div>
+    </header>
     
-    <aside class="expenses">
-        <div class="expenses">
-            <header>
-                <h2>Expenses</h2>
-            </header>
-            <form action="#" method="post">
-                <div class="form-group">
-                    <label for="expenseDate">Date:</label>
-                    <input type="date" id="expenseDate" name="expenseDate" required>
-                </div>
-                <div class="form-group">
-                    <label for="expenseAmount">Amount:</label>
-                    <input type="number" id="expenseAmount" name="expenseAmount" required>
-                </div>
-                <div class="form-group">
-                    <label for="expenseDescription">Description:</label>
-                    <input type="text" id="expenseDescription" name="expenseDescription" required>
-                </div>
-                <div class="form-group">
-                    <label for="expenseCategory">Category:</label>
-                    <select id="expenseCategory" name="expenseCategory" required>
-                        <option value="" disabled selected>Select category</option>
+    <div class="container">
+        <aside class="expenses">
+            <div class="expenses-form">
+                <header>
+                    <h2 id="expenses-form-heading">Expenses</h2>
+                </header>
+                <form action="#" method="post">
+                    <div class="form-group">
+                        <label for="expenseDate">Date:</label>
+                        <input type="date" id="expenseDate" name="expenseDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expenseAmount">Amount:</label>
+                        <input type="number" id="expenseAmount" name="expenseAmount" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expenseDescription">Description:</label>
+                        <input type="text" id="expenseDescription" name="expenseDescription" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expenseCategory">Category:</label>
+                        <select id="expenseCategory" name="expenseCategory" required>
+                            <option value="" disabled selected>Select category</option>
+                            <option value="Housing">Housing</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Food">Food</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Clothing">Clothing</option>
+                            <option value="Medical">Medical</option>
+                            <option value="Investment">Investment</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <button id="saveExpenseBtn" type="submit">Add Expense</button>
+                </form>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <section class="expenses-history">
+                <header>
+                    <h2>Expenses History</h2>
+                </header>
+                <div class="filter">
+                    <label for="selectCategory">Select category:</label>
+                    <select id="selectCategory" onchange="filterExpenses()">
+                        <option value="all">All</option>
                         <option value="Housing">Housing</option>
                         <option value="Transportation">Transportation</option>
                         <option value="Food">Food</option>
@@ -41,43 +79,20 @@
                         <option value="Other">Other</option>
                     </select>
                 </div>
-                <button id="saveExpenseBtn" type="submit">Add Expense</button>
-            </form>
-        </div>
-    </aside>
-
-    <main class="main-content">
-        <section class="expenses-history">
-            <header>
-                <h2>Expenses History</h2>
-            </header>
-            <div class="filter">
-                <label for="selectCategory">Select category:</label>
-                <select id="selectCategory" onchange="filterExpenses()">
-                    <option value="all">All</option>
-                    <option value="Housing">Housing</option>
-                    <option value="Transportation">Transportation</option>
-                    <option value="Food">Food</option>
-                    <option value="Utilities">Utilities</option>
-                    <option value="Clothing">Clothing</option>
-                    <option value="Medical">Medical</option>
-                    <option value="Investment">Investment</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-            <table id="expensesTable">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Amount</th>
-                        <th>Description</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="expensesTableBody"></tbody>
-            </table>
-        </section>
-    </main>
+                <table id="expensesTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesTableBody"></tbody>
+                </table>
+            </section>
+        </main>
+    </div>
     
     <script src="js/Expenses.js"></script>
 </body>
