@@ -118,6 +118,19 @@ header {
   margin-top: 20px;
 }
 
+#loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.8);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
 @media (max-width: 768px) {
   .container {
       flex-direction: column;

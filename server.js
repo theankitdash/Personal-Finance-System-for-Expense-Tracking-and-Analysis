@@ -323,23 +323,37 @@ app.get('/expensesData', (req, res) => {
     // Fetch data for the analysis based on selected date range
     const { fromDate, toDate } = req.query;
 
-    // Query to fetch data for the analysis within the specified date range
-    let query = `
+    // Query to fetch aggregated data within the specified date range
+    let aggregatedQuery = `
         SELECT category, SUM(amount) AS total_amount
         FROM expenses
         WHERE date >= ? AND date <= ?
         GROUP BY category
     `;
 
+    // Query to fetch detailed data within the specified date range
+    let detailedQuery = `
+        SELECT category, amount, date
+        FROM expenses
+        WHERE date >= ? AND date <= ?
+    `;
+
     const queryParams = [fromDate, toDate];
 
-    db.query(query, queryParams, (err, results) => {
+    db.query(aggregatedQuery, queryParams, (err, aggregatedResults) => {
         if (err) {
-            console.error('Error retrieving graph data:', err.message);
+            console.error('Error retrieving Data:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
 
-        res.json(results);
+        db.query(detailedQuery, queryParams, (err, detailedResults) => {
+            if (err) {
+                console.error('Error retrieving Data:', err.message);
+                return res.status(500).json({ success: false, message: 'Internal Server Error' });
+            }
+
+            res.json({ aggregatedData: aggregatedResults, detailedData: detailedResults });
+        });
     });
 });
 
