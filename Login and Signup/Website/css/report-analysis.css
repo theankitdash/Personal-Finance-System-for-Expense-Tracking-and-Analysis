@@ -118,6 +118,10 @@ header {
   margin-top: 20px;
 }
 
+#analysis-results {
+  white-space: pre-wrap;
+}
+
 #loading-indicator {
   display: flex;
   justify-content: center;

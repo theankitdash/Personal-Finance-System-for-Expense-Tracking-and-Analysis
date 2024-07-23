@@ -26,6 +26,7 @@ def analyze_financial_data(data):
     total_amount = sum(amount for categories in month_category_data.values() for amount in categories.values())
     report_lines.append(f"Total Amount Spent: ${total_amount:.2f}")
     
+    # Join all lines with newline characters
     return "\n".join(report_lines)
 
 def main():

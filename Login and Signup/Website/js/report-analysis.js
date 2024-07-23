@@ -150,6 +150,6 @@ function getBorderColor(length) {
 
 function updateAnalysisResults(data) {
     const analysisResultsDiv = document.getElementById('analysis-results');
-    analysisResultsDiv.innerHTML = `<p>${data}</p>`;
+    analysisResultsDiv.textContent = data;
     document.getElementById('analysis-section').style.display = 'block';
 }
