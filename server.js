@@ -259,6 +259,40 @@ app.post('/saveExpenses', (req, res) => {
     });
 });
 
+// Endpoint for updating an existing expense
+app.put('/updateExpenses/:id', (req, res) => {
+    // Check if the user is logged in
+    if (!req.session.phone || !req.session.password) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Extract expense details from request body
+    const { date, amount, description, category } = req.body;
+    const { id } = req.params;
+    const phone = req.session.phone;
+
+    // Update expense in the database
+    const updateQuery = `
+        UPDATE expenses
+        SET date = ?, amount = ?, description = ?, category = ?
+        WHERE id = ? AND phone = ?
+    `;
+    db.query(updateQuery, [date, amount, description, category, id, phone, date, amount, description, category, id, phone], (err, result) => {
+        if (err) {
+            console.error('Error updating expense:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+
+        // Check if the expense was found and updated
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Expense not found or not authorized' });
+        }
+
+        res.json({ success: true, message: 'Expense updated successfully' });
+    });
+});
+
+
 // Endpoint to retrieve expenses history for the current user
 app.get('/expensesHistory', (req, res) => {
     // Check if the user is logged in

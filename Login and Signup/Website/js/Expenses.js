@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
+    
     // Function to format date as YYYY-MM-DD
     function formatDate(dateString) {
         if (!dateString) return ''; // Return empty string if date is not provided
@@ -30,13 +31,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add event listener to the form submission
     const saveExpenseBtn = document.getElementById('saveExpenseBtn');
-    saveExpenseBtn.addEventListener('click', function(event) {
+    
+    function handleSaveOrUpdateButtonClick(event) {
         event.preventDefault(); // Prevent default form submission behavior
 
         const date = document.getElementById('expenseDate').value;
         const amount = document.getElementById('expenseAmount').value;
         const description = document.getElementById('expenseDescription').value;
         const category = document.getElementById('expenseCategory').value;
+        const expenseId = saveExpenseBtn.getAttribute('data-expense-id'); // Retrieve the expense ID
 
         // Validate input values (optional)
         if (!date || !amount || !description || !category) {
@@ -44,9 +47,12 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Send request to save expense
-        fetch('/saveExpenses', {
-            method: 'POST',
+        const url = expenseId ? `/updateExpenses/${expenseId}` : '/saveExpenses';
+        const method = expenseId ? 'PUT' : 'POST';
+
+        // Send request to save or update expense
+        fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -56,18 +62,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 return response.json();
             } else {
-                throw new Error('Failed to save expense');
+                throw new Error(`Failed to ${expenseId ? 'update' : 'save'} expense`);
             }
         })
         .then(data => {
-            console.log('Expense saved successfully:', data);
-            alert('Expense saved successfully');
-            fetchAllExpenses(); // Refresh expenses history after saving
+            console.log(`${expenseId ? 'Expense updated' : 'Expense saved'} successfully:`, data);
+            alert(`${expenseId ? 'Expense updated' : 'Expense saved'} successfully`);
+            fetchAllExpenses(); // Refresh expenses history after saving/updating
+
+            // Reset form and button state
+            resetForm();
         })
         .catch(error => {
-            handleFetchError(error, 'Error saving expense');
+            handleFetchError(error, `Error ${expenseId ? 'updating' : 'saving'} expense`);
         });
-    });
+    }
 
     // Fetch all expenses history
     function fetchAllExpenses() {
@@ -209,6 +218,13 @@ document.addEventListener('DOMContentLoaded', function() {
         removeButton.setAttribute('aria-label', 'Remove expense');
         removeButton.addEventListener('click', () => removeExpense(expense.id));
         actionCell.appendChild(removeButton);
+
+        const modifyButton = document.createElement('button');
+        modifyButton.textContent = 'Modify';
+        modifyButton.setAttribute('aria-label', 'Modify expense');
+        modifyButton.addEventListener('click', () => modifyExpense(expense));
+        actionCell.appendChild(modifyButton);
+
         row.appendChild(actionCell);
 
         return row;
@@ -230,6 +246,47 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             handleFetchError(error, 'Error removing expense');
         });
+    }
+
+    // Modify expense
+    function modifyExpense(expense) {
+        // Populate the form fields with the expense details
+        document.getElementById('expenseDate').value = formatDate(expense.date);
+        document.getElementById('expenseAmount').value = expense.amount;
+        document.getElementById('expenseDescription').value = expense.description;
+        document.getElementById('expenseCategory').value = expense.category;
+
+        // Set the expense ID on the save button
+        saveExpenseBtn.setAttribute('data-expense-id', expense.id);
+
+        // Scroll to the form (optional)
+        document.getElementById('expenseForm').scrollIntoView();
+
+        // Update save button to indicate modification
+        saveExpenseBtn.textContent = 'Update Expense';
+
+        // Remove any existing event listener on the save button
+        saveExpenseBtn.removeEventListener('click', handleSaveOrUpdateButtonClick);
+
+        // Add new event listener to handle update
+        saveExpenseBtn.addEventListener('click', handleSaveOrUpdateButtonClick);
+    }
+
+    // Reset form and button state
+    function resetForm() {
+        document.getElementById('expenseDate').value = '';
+        document.getElementById('expenseAmount').value = '';
+        document.getElementById('expenseDescription').value = '';
+        document.getElementById('expenseCategory').value = '';
+
+        saveExpenseBtn.removeAttribute('data-expense-id'); // Remove the data-expense-id attribute
+        saveExpenseBtn.textContent = 'Save Expense';
+        saveExpenseBtn.removeEventListener('click', handleSaveOrUpdateButtonClick);
+        saveExpenseBtn.addEventListener('click', handleSaveOrUpdateButtonClick);
+
+        // Reset filter and dropdown
+        document.getElementById('selectFilter').value = 'all'; // Set filter to 'all'
+        updateFilterOptions(); // Update filter options to reset the dropdown
     }
 
     // Event listeners
