@@ -15,6 +15,60 @@ document.addEventListener('DOMContentLoaded', function() {
         alert(`An error occurred: ${message}`);
     }
 
+    // Fetch current user's details
+    fetch('/Details')
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            throw new Error('Failed to fetch current credentials');
+        }
+    })
+    .catch(error => {
+        handleFetchError(error, 'Error fetching user details');
+    });
+
+    // Add event listener to the form submission
+    const saveExpenseBtn = document.getElementById('saveExpenseBtn');
+    saveExpenseBtn.addEventListener('click', function(event) {
+        event.preventDefault(); // Prevent default form submission behavior
+
+        const date = document.getElementById('expenseDate').value;
+        const amount = document.getElementById('expenseAmount').value;
+        const description = document.getElementById('expenseDescription').value;
+        const category = document.getElementById('expenseCategory').value;
+
+        // Validate input values (optional)
+        if (!date || !amount || !description || !category) {
+            alert('Please fill out all fields');
+            return;
+        }
+
+        // Send request to save expense
+        fetch('/saveExpenses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ date, amount, description, category })
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to save expense');
+            }
+        })
+        .then(data => {
+            console.log('Expense saved successfully:', data);
+            alert('Expense saved successfully');
+            fetchAllExpenses(); // Refresh expenses history after saving
+        })
+        .catch(error => {
+            handleFetchError(error, 'Error saving expense');
+        });
+    });
+
     // Fetch all expenses history
     function fetchAllExpenses() {
         fetch('/expensesHistory?filter=all&value=')
