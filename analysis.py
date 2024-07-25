@@ -9,7 +9,7 @@ def analyze_financial_data(data):
     # Organize data by month and category
     for item in data:
         try:
-            month = parser.parse(item['date']).strftime('%Y-%m')
+            month = parser.parse(item['date']).strftime('%b-%Y')
             month_category_data[month][item['category']] += item['amount']
         except (ValueError, KeyError, TypeError):
             print(f"Skipping invalid item: {item}")

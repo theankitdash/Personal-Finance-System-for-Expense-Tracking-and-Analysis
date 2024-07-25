@@ -1,84 +1,103 @@
 document.addEventListener('DOMContentLoaded', function() {
-
     // Function to format date as YYYY-MM-DD
-    function formatDate(date) {
-        if (!date) return ''; // Return empty string if date is not provided
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
+    function formatDate(dateString) {
+        if (!dateString) return ''; // Return empty string if date is not provided
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
-    } 
-    
+    }
+
     // Function to handle fetch errors
     function handleFetchError(error, message) {
         console.error(message, error);
         alert(`An error occurred: ${message}`);
     }
 
-    // Fetch current user's details
-    fetch('/Details')
-    .then(response => {
-        if (response.ok) {
-            return response.json();
-        } else {
-            throw new Error('Failed to fetch current credentials');
-        }
-    })
-    .catch(error => {
-        handleFetchError(error, 'Error fetching user details');
-    });
-
-    // Add event listener to the form submission
-    const saveExpenseBtn = document.getElementById('saveExpenseBtn');
-    saveExpenseBtn.addEventListener('click', function(event) {
-        event.preventDefault(); // Prevent default form submission behavior
-
-        const date = document.getElementById('expenseDate').value;
-        const amount = document.getElementById('expenseAmount').value;
-        const description = document.getElementById('expenseDescription').value;
-        const category = document.getElementById('expenseCategory').value;
-
-        // Validate input values (optional)
-        if (!date || !amount || !description || !category) {
-            alert('Please fill out all fields');
-            return;
-        }
-
-        // Send request to save expense
-        fetch('/saveExpenses', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ date, amount, description, category })
-        })
+    // Fetch all expenses history
+    function fetchAllExpenses() {
+        fetch('/expensesHistory?filter=all&value=')
         .then(response => {
             if (response.ok) {
                 return response.json();
             } else {
-                throw new Error('Failed to save expense');
+                throw new Error('Failed to fetch expenses history');
             }
         })
-        .then(data => {
-            // Handle successful saving of expense
-            console.log('Expense saved successfully:', data);
-            alert('Expense saved successfully');
+        .then(expenses => {
+            const expensesTableBody = document.getElementById('expensesTableBody');
+            expensesTableBody.innerHTML = '';
 
-            // After saving the expense, update the expenses history
-            updateExpensesHistory();
+            expenses.forEach(expense => {
+                const formattedDate = formatDate(expense.date);
+                const row = createExpenseRow(expense, formattedDate);
+                expensesTableBody.appendChild(row);
+            });
         })
         .catch(error => {
-            // Handle error
-            handleFetchError(error, 'Error saving expense');
+            handleFetchError(error, 'Error fetching expenses history');
         });
-    });
+    }
 
-    // Function to update expenses history
+    // Fetch unique options for a given filter type
+    function fetchUniqueOptions(filterType) {
+        return fetch(`/uniqueOptions?filter=${filterType}`)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Failed to fetch unique options');
+                }
+            });
+    }
+
+    // Update filter options
+    function updateFilterOptions() {
+        const filterType = document.getElementById('selectFilter').value;
+        const selectOption = document.getElementById('selectOption');
+        const dateInput = document.getElementById('dateInput');
+
+        selectOption.innerHTML = '<option value="">Select an option</option>'; // Default option
+        selectOption.style.display = 'none'; // Hide by default
+        dateInput.style.display = 'none'; // Hide by default
+
+        if (filterType === 'all') {
+            fetchAllExpenses();
+            return;
+        }
+
+        if (filterType === 'date') {
+            dateInput.style.display = 'block';
+            return;
+        }
+
+        selectOption.style.display = 'block';
+        fetchUniqueOptions(filterType)
+        .then(uniqueOptions => {
+            uniqueOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.textContent = option;
+                selectOption.appendChild(opt);
+            });
+        })
+        .catch(error => {
+            handleFetchError(error, 'Error fetching unique options');
+        });
+    }
+
+    // Update expenses history based on selected filter
     function updateExpensesHistory() {
-        // Fetch expenses history based on selected category
-        const selectedCategory = document.getElementById('selectCategory').value;
-        const url = `/expensesHistory?category=${selectedCategory}`;
+        const filterType = document.getElementById('selectFilter').value;
+        const selectOption = document.getElementById('selectOption').value;
+        const dateInput = document.getElementById('dateInput').value;
+
+        const params = new URLSearchParams();
+        params.append('filter', filterType);
+        params.append('value', filterType === 'date' ? dateInput : selectOption);
+
+        const url = `/expensesHistory?${params.toString()}`;
 
         fetch(url)
         .then(response => {
@@ -89,22 +108,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(expenses => {
-            // Clear existing expenses list
             const expensesTableBody = document.getElementById('expensesTableBody');
             expensesTableBody.innerHTML = '';
 
-            // Populate expenses table with fetched data
+            if (expenses.length === 0) {
+                const noRecordsMessage = document.createElement('tr');
+                noRecordsMessage.innerHTML = '<td colspan="5">No records found for this selection</td>';
+                expensesTableBody.appendChild(noRecordsMessage);
+                return;
+            }
+
             expenses.forEach(expense => {
                 const formattedDate = formatDate(expense.date);
                 const row = createExpenseRow(expense, formattedDate);
-
-                // Append row to the table body
                 expensesTableBody.appendChild(row);
-
             });
         })
         .catch(error => {
-            // Handle error
             handleFetchError(error, 'Error fetching expenses history');
         });
     }
@@ -113,7 +133,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function createExpenseRow(expense, formattedDate) {
         const row = document.createElement('tr');
 
-        // Create cells for each attribute
         const dateCell = document.createElement('td');
         dateCell.textContent = formattedDate;
         row.appendChild(dateCell);
@@ -126,10 +145,14 @@ document.addEventListener('DOMContentLoaded', function() {
         descriptionCell.textContent = expense.description;
         row.appendChild(descriptionCell);
 
-        //Action button
+        const categoryCell = document.createElement('td');
+        categoryCell.textContent = expense.category;
+        row.appendChild(categoryCell);
+
         const actionCell = document.createElement('td');
         const removeButton = document.createElement('button');
         removeButton.textContent = 'Remove';
+        removeButton.setAttribute('aria-label', 'Remove expense');
         removeButton.addEventListener('click', () => removeExpense(expense.id));
         actionCell.appendChild(removeButton);
         row.appendChild(actionCell);
@@ -137,14 +160,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return row;
     }
 
-    // Function to remove expense
+    // Remove expense
     function removeExpense(id) {
         fetch(`/expenses/${id}`, {
             method: 'DELETE'
         })
         .then(response => {
             if (response.ok) {
-                // Refresh expenses history after removing expense
                 updateExpensesHistory();
                 alert('Expense removed successfully');
             } else {
@@ -152,16 +174,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            // Handle error
             handleFetchError(error, 'Error removing expense');
         });
     }
 
-    // Add event listener to the category dropdown menu
-    const selectCategory = document.getElementById('selectCategory');
-    selectCategory.addEventListener('change', updateExpensesHistory);
+    // Event listeners
+    document.getElementById('selectFilter').addEventListener('change', updateFilterOptions);
+    document.getElementById('selectOption').addEventListener('change', updateExpensesHistory);
+    document.getElementById('dateInput').addEventListener('change', updateExpensesHistory);
 
-    // Initial update of expenses history when the page loads
-    updateExpensesHistory();
-
+    // Initial setup
+    updateFilterOptions();
 });

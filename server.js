@@ -268,16 +268,34 @@ app.get('/expensesHistory', (req, res) => {
 
     // Fetch expenses history for the logged-in user based on selected category
     const phone = req.session.phone;
-    const category = req.query.category; // Retrieve selected category from query parameters
+    const filter = req.query.filter || 'all'; // Default to 'all' if not specified
+    const value = req.query.value || '';
 
-    let query = 'SELECT id, date, amount, description FROM expenses WHERE phone = ? ORDER BY date DESC;';
+    let query = `   SELECT id, 
+                        date, 
+                        amount, 
+                        description, 
+                        category 
+                    FROM expenses 
+                    WHERE phone = ?
+                `;
     const queryParams = [phone];
 
-    // If category is provided, add category filter to the query
-    if (category && category !== 'all') {
-        query += ' AND category = ?';
-        queryParams.push(category);
+    // Modify query based on the filter type
+    if (filter !== 'all') {
+        if (filter === 'category') {
+            query += ' AND category = ?';
+            queryParams.push(value);
+        } else if (filter === 'description') {
+            query += ' AND description = ?';
+            queryParams.push(value);
+        } else if (filter === 'date') {
+            query += ' AND date = ?';
+                queryParams.push(value);
+        }
     }
+
+    query += ' ORDER BY date DESC';
 
     db.query(query, queryParams, (err, results) => {
         if (err) {
@@ -286,6 +304,33 @@ app.get('/expensesHistory', (req, res) => {
         }
 
         res.json(results);
+    });
+});
+
+// Endpoint to retrieve unique options for the selected filter type
+app.get('/uniqueOptions', (req, res) => {
+    const phone = req.session.phone;
+    const filterType = req.query.filter;
+
+    let query = '';
+    if (filterType === 'category') {
+        query = 'SELECT DISTINCT category AS uniqueOption FROM expenses WHERE phone = ?';
+    } else if (filterType === 'description') {
+        query = 'SELECT DISTINCT description AS uniqueOption FROM expenses WHERE phone = ?';
+    } else if (filterType === 'date') {
+        query = 'SELECT DISTINCT date AS uniqueOption FROM expenses WHERE phone = ?';
+    } else {
+        return res.status(400).json({ success: false, message: 'Invalid filter type' });
+    }
+
+    db.query(query, [phone], (err, results) => {
+        if (err) {
+            console.error('Error retrieving unique options:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+
+        const uniqueOptions = results.map(result => result.uniqueOption);
+        res.json(uniqueOptions);
     });
 });
 
