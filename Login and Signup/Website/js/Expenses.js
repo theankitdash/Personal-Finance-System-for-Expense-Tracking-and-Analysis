@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const category = document.getElementById('expenseCategory').value;
         const expenseId = saveExpenseBtn.getAttribute('data-expense-id'); // Retrieve the expense ID
 
-        // Validate input values (optional)
+        // Validate input values
         if (!date || !amount || !description || !category) {
             alert('Please fill out all fields');
             return;
@@ -213,6 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
         row.appendChild(categoryCell);
 
         const actionCell = document.createElement('td');
+        
         const removeButton = document.createElement('button');
         removeButton.textContent = 'Remove';
         removeButton.setAttribute('aria-label', 'Remove expense');

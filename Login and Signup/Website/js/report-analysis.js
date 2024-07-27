@@ -38,7 +38,6 @@ async function fetchExpensesData(fromDate, toDate) {
         }
 
         const data = await response.json();
-        console.log('Fetched Data:', data); // Debugging line
 
         if (data.aggregatedData.length > 0) {
             renderPieChart(data.aggregatedData);
@@ -56,20 +55,17 @@ async function fetchExpensesData(fromDate, toDate) {
 
 async function fetchAndAnalyzeExpenses(fromDate, toDate) {
     const loadingIndicator = document.getElementById('loading-indicator');
-    let loadingTimeout;
 
     try {
         const expensesData = JSON.parse(document.getElementById('graph').dataset.detailedExpenses || '[]');
-        
+
         if (expensesData.length === 0) {
             alert('No detailed data available for analysis.');
             return;
         }
 
-        // Show loading indicator if analysis takes more than 2 seconds
-        loadingTimeout = setTimeout(() => {
-            loadingIndicator.style.display = 'flex';
-        }, 2000);
+        // Show loading indicator from the start
+        loadingIndicator.style.display = 'flex';
 
         const response = await fetch('/analyzeFinancialData', {
             method: 'POST',
@@ -79,7 +75,6 @@ async function fetchAndAnalyzeExpenses(fromDate, toDate) {
             body: JSON.stringify({ data: expensesData })
         });
 
-        clearTimeout(loadingTimeout);
         loadingIndicator.style.display = 'none';
 
         if (!response.ok) {
@@ -89,7 +84,6 @@ async function fetchAndAnalyzeExpenses(fromDate, toDate) {
         const result = await response.text();
         updateAnalysisResults(result);
     } catch (error) {
-        clearTimeout(loadingTimeout);
         loadingIndicator.style.display = 'none';
         console.error('Error fetching analysis results:', error);
         alert('An error occurred while fetching analysis results.');
@@ -101,8 +95,6 @@ function renderPieChart(aggregatedData) {
     if (chartInstance) {
         chartInstance.destroy();
     }
-
-    console.log('Aggregated Data for Chart:', aggregatedData); // Debugging line
 
     chartInstance = new Chart(ctx, {
         type: 'pie',
