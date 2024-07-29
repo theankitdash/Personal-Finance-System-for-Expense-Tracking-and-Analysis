@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    
+
     // Function to format date as YYYY-MM-DD
     function formatDate(dateString) {
         if (!dateString) return ''; // Return empty string if date is not provided
@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const url = expenseId ? `/updateExpenses/${expenseId}` : '/saveExpenses';
         const method = expenseId ? 'PUT' : 'POST';
+        const expenseData = { date, amount, description, category };
+
+        console.log(`Sending ${method} request to ${url} with data:`, expenseData);
 
         // Send request to save or update expense
         fetch(url, {
@@ -56,13 +59,15 @@ document.addEventListener('DOMContentLoaded', function() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ date, amount, description, category })
+            body: JSON.stringify(expenseData)
         })
         .then(response => {
             if (response.ok) {
                 return response.json();
             } else {
-                throw new Error(`Failed to ${expenseId ? 'update' : 'save'} expense`);
+                return response.json().then(errorData => {
+                    throw new Error(`Failed to ${expenseId ? 'update' : 'save'} expense: ${errorData.message}`);
+                });
             }
         })
         .then(data => {
@@ -212,6 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
         categoryCell.textContent = expense.category;
         row.appendChild(categoryCell);
 
+        //Action button
         const actionCell = document.createElement('td');
         
         const removeButton = document.createElement('button');
@@ -297,4 +303,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial setup
     updateFilterOptions();
+    saveExpenseBtn.addEventListener('click', handleSaveOrUpdateButtonClick); // Ensure the event listener is added here
+    fetchAllExpenses(); // Fetch all expenses on initial setup
 });

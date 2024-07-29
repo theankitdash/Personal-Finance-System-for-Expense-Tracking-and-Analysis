@@ -2,6 +2,7 @@ import sys
 import json
 from collections import defaultdict
 from dateutil import parser
+from datetime import timedelta
 import numpy as np
 import tensorflow as tf
 from keras.models import Sequential
@@ -14,7 +15,8 @@ def analyze_financial_data(data):
     # Organize data by month and category
     for item in data:
         try:
-            month = parser.parse(item['date']).strftime('%b-%Y')
+            date = parser.parse(item['date']) + timedelta(days=1)
+            month = date.strftime('%b-%Y')
             month_category_data[month][item['category']] += item['amount']
         except (ValueError, KeyError, TypeError):
             print(f"Skipping invalid item: {item}")
