@@ -25,7 +25,35 @@
 
                     <button type="submit" id="submitButton">Login</button>
                 </form>
+                <p id="forgotPasswordText"><a href="#" onclick="showForgotPassword()">Forgot Password?</a></p>
                 <p id="toggleFormText">Don't have an account? <a href="#" onclick="toggleForm()">Register here</a></p>
+            </div>
+
+            <!-- Forgot Password Modal -->
+            <div id="forgotPasswordModal" class="modal">
+                <div class="modal-content">
+                    <span id="closeModalButton" class="close">&times;</span>
+                    <div id="step1">
+                        <h2>Forgot Password</h2>
+                        <form id="verifyUserForm">
+                            <label for="resetPhone">Phone Number:</label>
+                            <input type="tel" id="resetPhone" name="resetPhone" required aria-label="Phone Number" pattern="[0-9]{10}">
+
+                            <label for="dob">Date of Birth:</label>
+                            <input type="date" id="dob" name="dob" required aria-label="Date of Birth">
+
+                            <button type="submit">Verify</button>
+                        </form>
+                    </div>
+                <div id="step2" style="display:none;">
+                    <h2>Set New Password</h2>
+                    <form id="resetPasswordForm">
+                        <label for="newPassword">New Password:</label>
+                        <input type="password" id="newPassword" name="newPassword" required aria-label="New Password">
+
+                        <button type="submit">Reset Password</button>
+                    </form>
+                </div>
             </div>
         </div>
         

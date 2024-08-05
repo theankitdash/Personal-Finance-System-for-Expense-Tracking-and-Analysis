@@ -6,9 +6,88 @@ document.addEventListener('DOMContentLoaded', function() {
     const toggleFormText = document.getElementById('toggleFormText');
     const confirmPasswordLabel = document.getElementById('confirmPasswordLabel');
     const confirmPassword = document.getElementById('confirmPassword');
+    const forgotPasswordText = document.getElementById('forgotPasswordText');
+    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+    const closeModalButton = document.getElementById('closeModalButton');
+    const resetPasswordForm = document.getElementById('resetPasswordForm');
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
 
     // Add event listener for toggleFormText link clicks
     toggleFormText.addEventListener('click', toggleForm);
+    forgotPasswordText.querySelector('a').addEventListener('click', openForgotPasswordModal);
+    closeModalButton.addEventListener('click', closeForgotPasswordModal);
+
+    // Add event listener for resetPasswordForm submit
+    verifyUserForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const phone = document.getElementById('resetPhone').value;
+        const dob = document.getElementById('dob').value;
+
+        // Validate phone number and date of birth
+        if (!isPhoneValid(phone)) {
+            alert('Please enter a valid phone number.');
+            return;
+        }
+        if (!dob) {
+            alert('Please enter your date of birth.');
+            return;
+        }
+
+        // Request to verify phone and DOB
+        try {
+            const response = await fetch('/auth/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ phone, dob }),
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                step1.style.display = 'none';
+                step2.style.display = 'block';
+            } else {
+                alert('Verification failed. Please check your details and try again.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        }
+    });
+
+    resetPasswordForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const phone = document.getElementById('resetPhone').value;
+        const newPassword = document.getElementById('newPassword').value;
+
+        if (!isStrongPassword(newPassword)) {
+            alert('New password must contain at least one uppercase letter, one lowercase letter, one digit, one special character, and be at least 8 characters long.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/auth/resetPassword', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ phone, newPassword }),
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert('Password reset successful.');
+                closeForgotPasswordModal();
+            } else {
+                alert('Password reset failed. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        }
+    });
 
     function toggleForm(event) {
         event.preventDefault();
@@ -27,6 +106,15 @@ document.addEventListener('DOMContentLoaded', function() {
             confirmPasswordLabel.style.display = 'block';
             confirmPassword.style.display = 'block';
         }
+    }
+
+    function openForgotPasswordModal(event) {
+        event.preventDefault();
+        forgotPasswordModal.style.display = 'block';
+    }
+
+    function closeForgotPasswordModal() {
+        forgotPasswordModal.style.display = 'none';
     }
 });
 
