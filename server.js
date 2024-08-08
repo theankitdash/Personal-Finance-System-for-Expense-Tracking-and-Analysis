@@ -293,7 +293,10 @@ app.post('/saveExpenses', (req, res) => {
         INSERT INTO expenses (phone, date, amount, description, category)
         VALUES (?, ?, ?, ?, ?)
     `;
-    db.query(insertQuery, [phone, date, amount, description, category, date, amount, description, category], (err, result) => {
+
+    const queryParams = [phone, date, amount, description, category];
+
+    db.query(insertQuery, queryParams, (err, result) => {
         if (err) {
             console.error('Error adding expense:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -321,7 +324,10 @@ app.put('/updateExpenses/:id', (req, res) => {
         SET date = ?, amount = ?, description = ?, category = ?
         WHERE id = ? AND phone = ?
     `;
-    db.query(updateQuery, [date, amount, description, category, id, phone, date, amount, description, category, id, phone], (err, result) => {
+
+    const queryParams = [date, amount, description, category, id, phone];
+    
+    db.query(updateQuery, queryParams, (err, result) => {
         if (err) {
             console.error('Error updating expense:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
