@@ -6,7 +6,7 @@ const session = require('express-session');
 const { spawn } = require('child_process');
 
 const app = express();
-const port = 3306 || 3000;
+const port = process.env.PORT || 3000;
 
 // Initialize express-session middleware
 app.use(session({
@@ -16,15 +16,14 @@ app.use(session({
 }));
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'Login and Signup')));
-app.use(express.static(path.join(__dirname, 'Website')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // MySQL database setup
 const db = mysql.createConnection({
-    host: the-finance-tracker-server.mysql.database.azure.com || 'localhost',
-    user: nbcoliqdhj || 'root',
-    password: ncU0tiqy$Jep7U4Q || 'Chiku@4009',
-    database: the-finance-tracker-database || 'finance-tracker',
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'Chiku@4009',
+    database: process.env.DB_NAME || 'finance-tracker',
 });
 
 db.connect((err) => {
@@ -102,7 +101,6 @@ app.post('/auth/login', async (req, res) => {
         if (passwordMatch) {
             // Store the phone number in the session
             req.session.phone = phone;
-            req.session.password = hashedPassword;
             res.json({ success: true });
 
         } else {
@@ -127,7 +125,6 @@ app.post('/auth/register', async (req, res) => {
         }
 
         req.session.phone = phone;
-        req.session.password = hashedPassword;
         res.json({ success: true });
     });
 });
@@ -183,13 +180,12 @@ app.post('/auth/resetPassword', async (req, res) => {
 //Endpoint to get current phone number and password
 app.get('/Details', (req, res) => {
     // Check if the user is logged in
-    if (!req.session.phone || !req.session.password) {
+    if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
     // Fetch current credentials for the logged-in user
     const phone = req.session.phone;
-    const password = req.session.password;
 
     // Combine both queries into a single query using JOIN
     const combinedQuery = `
@@ -213,14 +209,14 @@ app.get('/Details', (req, res) => {
 
         // Send the response with combined personal and budget information
         const { name, gender, date_of_birth: dateOfBirth, date, amount, description, category} = results[0];
-        res.json({ success: true, phone, password, name, gender, dateOfBirth, date, amount, description, category});
+        res.json({ success: true, phone, name, gender, dateOfBirth, date, amount, description, category});
     });
 });
 
 // Endpoint to save personal details
 app.post('/savePersonalDetails', (req, res) => {
     // Check if the user is logged in
-    if (!req.session.phone || !req.session.password) {
+    if (!req.session.phone ) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -245,7 +241,7 @@ app.post('/savePersonalDetails', (req, res) => {
 // Endpoint to retrieve expenses for the current month
 app.get('/currentMonthExpenses', (req, res) => {
     // Check if the user is logged in
-    if (!req.session.phone || !req.session.password) {
+    if (!req.session.phone ) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -284,7 +280,7 @@ app.get('/currentMonthExpenses', (req, res) => {
 // Authentication endpoint for accessing budget information
 app.post('/saveExpenses', (req, res) => {
     // Check if the user is logged in
-    if (!req.session.phone || !req.session.password) {
+    if (!req.session.phone ) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -310,7 +306,7 @@ app.post('/saveExpenses', (req, res) => {
 // Endpoint for updating an existing expense
 app.put('/updateExpenses/:id', (req, res) => {
     // Check if the user is logged in
-    if (!req.session.phone || !req.session.password) {
+    if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -344,7 +340,7 @@ app.put('/updateExpenses/:id', (req, res) => {
 // Endpoint to retrieve expenses history for the current user
 app.get('/expensesHistory', (req, res) => {
     // Check if the user is logged in
-    if (!req.session.phone || !req.session.password) {
+    if (!req.session.phone ) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -419,7 +415,7 @@ app.get('/uniqueOptions', (req, res) => {
 // Endpoint to remove an expense
 app.delete('/expenses/:id', (req, res) => {
     // Check if the user is logged in
-    if (!req.session.phone || !req.session.password) {
+    if (!req.session.phone ) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -443,7 +439,7 @@ app.delete('/expenses/:id', (req, res) => {
 // Endpoint to retrieve data for the analysis
 app.get('/expensesData', (req, res) => {
     // Check if the user is logged in
-    if (!req.session.phone || !req.session.password) {
+    if (!req.session.phone ) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -492,7 +488,7 @@ app.post('/analyzeFinancialData', (req, res) => {
     console.log(`Data to be analyzed: ${JSON.stringify(data)}`);
 
     // Spawn a Python process to execute the analysis script
-    const pythonProcess = spawn('python', ['analysis.py', JSON.stringify(data)]);
+    const pythonProcess = spawn('python3', ['analysis.py', JSON.stringify(data)]);
 
     let analysisResult = '';
 
@@ -533,18 +529,20 @@ app.post('/analyzeFinancialData', (req, res) => {
 //Endpoint to change the user's password
 app.post('/changePassword', async (req, res) => {
     // Check if the user is logged in
-    if (!req.session.phone || !req.session.password) {
+    if (!req.session.phone ) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
     const { newPassword } = req.body;
 
+    // Validate the new password (e.g., check length, complexity)
+    if (!newPassword || newPassword.length < 8) {
+        return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long' });
+    }
+
     try {
         // Hash the new password
         const newHashedPassword = await bcrypt.hash(newPassword, 10);
-
-        // Update the hashed password in the session
-        req.session.password = newHashedPassword;
 
         // Update the hashed password in the database
         const phone = req.session.phone;
