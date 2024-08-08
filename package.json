@@ -1,8 +1,8 @@
 {
   "name": "finance-tracker",
   "version": "1.0.0",
-  "description": "",
-  "main": "first.js",
+  "description": "A finance tracker for tracking monthly expenses.",
+  "main": "server.js",
   "scripts": {
     "devStart": "nodemon server.js",
     "start": "node server.js"
