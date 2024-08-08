@@ -1,5 +1,5 @@
 {
-  "name": "intelligent-tutor-system",
+  "name": "finance-tracker",
   "version": "1.0.0",
   "description": "",
   "main": "first.js",
@@ -11,13 +11,10 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.1",
-    "connect-redis": "^7.1.1",
     "express": "^4.18.2",
     "express-session": "^1.18.0",
     "express-validator": "^7.0.1",
-    "morgan": "^1.10.0",
-    "mysql": "^2.18.1",
-    "redis": "^4.6.13"
+    "mysql": "^2.18.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"
