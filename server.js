@@ -6,7 +6,7 @@ const session = require('express-session');
 const { spawn } = require('child_process');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
 // Initialize express-session middleware
 app.use(session({
