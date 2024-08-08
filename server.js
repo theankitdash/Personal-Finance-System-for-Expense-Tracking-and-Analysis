@@ -6,7 +6,7 @@ const session = require('express-session');
 const { spawn } = require('child_process');
 
 const app = express();
-const port = 3000;
+const port = 3306 || 3000;
 
 // Initialize express-session middleware
 app.use(session({
@@ -21,10 +21,10 @@ app.use(express.static(path.join(__dirname, 'Website')));
 
 // MySQL database setup
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'Chiku@4009',
-    database: process.env.DB_NAME || 'finance-tracker',
+    host: the-finance-tracker-server.mysql.database.azure.com || 'localhost',
+    user: nbcoliqdhj || 'root',
+    password: ncU0tiqy$Jep7U4Q || 'Chiku@4009',
+    database: the-finance-tracker-database || 'finance-tracker',
 });
 
 db.connect((err) => {
