@@ -19,21 +19,13 @@ app.use(session({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const sslOptions = process.env.DB_USE_SSL === 'true' ? {
-    rejectUnauthorized: true,
-    ca: process.env.DB_CA ? fs.readFileSync(process.env.DB_CA) : undefined,
-    key: process.env.DB_KEY ? fs.readFileSync(process.env.DB_KEY) : undefined,
-    cert: process.env.DB_CERT ? fs.readFileSync(process.env.DB_CERT) : undefined
-} : null;
-
 // MySQL database setup
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'Chiku@4009',
-    database: process.env.DB_NAME || 'finance-tracker',
-    port: process.env.DB_PORT || 3306,
-    ssl: sslOptions  
+    host: 'the-finance-tracker-server.mysql.database.azure.com' || 'localhost',
+    user: 'nbcoliqdhj' || 'root',
+    password: 'ncU0tiqy$Jep7U4Q' || 'Chiku@4009',
+    database: 'the-finance-tracker-database' || 'finance-tracker',
+    port: 3306 || 3000
 });
 
 db.connect((err) => {
