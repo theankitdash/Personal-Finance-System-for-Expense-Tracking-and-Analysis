@@ -19,13 +19,15 @@ app.use(session({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+
 // MySQL database setup
 const db = mysql.createConnection({
-    host: 'the-finance-tracker-server.mysql.database.azure.com' || 'localhost',
-    user: 'nbcoliqdhj' || 'root',
-    password: 'ncU0tiqy$Jep7U4Q' || 'Chiku@4009',
-    database: 'the-finance-tracker-database' || 'finance-tracker',
-    port: 3306 || 3000
+    host: process.env.AZURE_MYSQL_HOST || 'localhost',
+    user: process.env.AZURE_MYSQL_USER || 'root',
+    password: process.env.AZURE_MYSQL_PASSWORD || 'Chiku@4009',
+    database: process.env.AZURE_MYSQL_DATABASE || 'finance-tracker',
+    port: process.env.AZURE_MYSQL_PORT || 3000,
+    ssl: process.env.AZURE_MYSQL_SSL || false
 });
 
 db.connect((err) => {
