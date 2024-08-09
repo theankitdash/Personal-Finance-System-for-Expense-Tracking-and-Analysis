@@ -27,7 +27,7 @@ const db = mysql.createConnection({
     password: process.env.AZURE_MYSQL_PASSWORD || 'Chiku@4009',
     database: process.env.AZURE_MYSQL_DATABASE || 'finance-tracker',
     port: process.env.AZURE_MYSQL_PORT || 3000,
-    ssl: process.env.AZURE_MYSQL_SSL || false
+    ssl: process.env.AZURE_MYSQL_SSL ? JSON.parse(process.env.AZURE_MYSQL_SSL) : false
 });
 
 db.connect((err) => {
