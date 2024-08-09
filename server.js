@@ -251,26 +251,15 @@ app.get('/currentMonthExpenses', (req, res) => {
 
     // Fetch expenses for the logged-in user for the current month
     const phone = req.session.phone;
-    const currentMonth = new Date().getMonth(); // Get the current month (1-indexed)
-    const currentYear = new Date().getFullYear(); // Get the current year
-
-    // Construct the start and end date of the current month
-    const startDate = new Date(currentYear, currentMonth, 1); // 1st day of the current month
-    const endDate = new Date(currentYear, currentMonth, +1, 0); // Last day of the next month
-    
-    // Format the dates as YYYY-MM-DD strings
-    const formattedStartDate = startDate.toISOString().split('T')[0];
-    const formattedEndDate = endDate.toISOString().split('T')[0];
 
     // SQL query to fetch expenses for the current month
     const query = `
         SELECT id, date, amount, description, category
         FROM expenses
-        WHERE phone = ? AND date >= ? AND date <= ?
+        WHERE phone = ? AND MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE())
     `;
-    const queryParams = [phone, formattedStartDate, formattedEndDate];
 
-    db.query(query, queryParams, (err, results) => {
+    db.query(query, phone, (err, results) => {
         if (err) {
             console.error('Error retrieving current month expenses:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
