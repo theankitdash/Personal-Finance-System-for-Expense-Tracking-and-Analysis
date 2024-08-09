@@ -105,7 +105,9 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/logout')
         .then(response => {
             if (response.redirected) {
-                window.location.href = 'http://localhost:3000'; // Redirect to the login page
+                // Dynamically construct the base URL
+                const baseUrl = window.location.origin;
+                window.location.href = `${baseUrl}`; // Redirect to the login page
             } else {
                 throw new Error('Failed to logout');
             }
