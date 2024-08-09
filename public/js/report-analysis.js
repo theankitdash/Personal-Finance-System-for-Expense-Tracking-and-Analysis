@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dateForm = document.getElementById('date-form');
     const fromDateInput = document.getElementById('from-date');
     const toDateInput = document.getElementById('to-date');
+    const loadingIndicator = document.getElementById('loading-indicator');
 
     fromDateInput.addEventListener('change', handleDateChange);
     toDateInput.addEventListener('change', handleDateChange);
@@ -12,7 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const toDate = toDateInput.value;
 
         if (fromDate && toDate) {
+            loadingIndicator.style.display = 'flex';
             await fetchAndAnalyzeExpenses(fromDate, toDate);
+            loadingIndicator.style.display = 'none';
         } else {
             alert('Please select valid dates.');
         }
@@ -26,7 +29,10 @@ async function handleDateChange() {
     const toDate = document.getElementById('to-date').value;
 
     if (fromDate && toDate) {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        loadingIndicator.style.display = 'flex';
         await fetchExpensesData(fromDate, toDate);
+        loadingIndicator.style.display = 'none';
     }
 }
 
@@ -54,8 +60,6 @@ async function fetchExpensesData(fromDate, toDate) {
 }
 
 async function fetchAndAnalyzeExpenses(fromDate, toDate) {
-    const loadingIndicator = document.getElementById('loading-indicator');
-
     try {
         const expensesData = JSON.parse(document.getElementById('graph').dataset.detailedExpenses || '[]');
 
@@ -63,9 +67,6 @@ async function fetchAndAnalyzeExpenses(fromDate, toDate) {
             alert('No detailed data available for analysis.');
             return;
         }
-
-        // Show loading indicator from the start
-        loadingIndicator.style.display = 'flex';
 
         const response = await fetch('/analyzeFinancialData', {
             method: 'POST',
@@ -75,8 +76,6 @@ async function fetchAndAnalyzeExpenses(fromDate, toDate) {
             body: JSON.stringify({ data: expensesData })
         });
 
-        loadingIndicator.style.display = 'none';
-
         if (!response.ok) {
             throw new Error('Failed to fetch analysis results');
         }
@@ -84,7 +83,6 @@ async function fetchAndAnalyzeExpenses(fromDate, toDate) {
         const result = await response.text();
         updateAnalysisResults(result);
     } catch (error) {
-        loadingIndicator.style.display = 'none';
         console.error('Error fetching analysis results:', error);
         alert('An error occurred while fetching analysis results.');
     }

@@ -94,7 +94,7 @@ app.post('/auth/login', async (req, res) => {
         }
 
         if (results.length === 0) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ success: false, message: 'Invalid Credentials!' });
         }
 
         const hashedPassword = results[0].password;
@@ -108,7 +108,7 @@ app.post('/auth/login', async (req, res) => {
             res.json({ success: true });
 
         } else {
-            res.status(401).json({ success: false, message: 'Invalid credentials' });
+            res.status(401).json({ success: false, message: 'Invalid Credentials!' });
         }
     });
 });
@@ -125,7 +125,7 @@ app.post('/auth/register', async (req, res) => {
     db.query(insertQuery, [phone, hashedPassword], (err) => {
         if (err) {
             console.error('Error inserting user:', err.message);
-            return res.status(400).json({ success: false, message: 'Phone number already exists' });
+            return res.status(400).json({ success: false, message: 'Phone Number Already Exists!' });
         }
 
         req.session.phone = phone;
@@ -251,13 +251,13 @@ app.get('/currentMonthExpenses', (req, res) => {
 
     // Fetch expenses for the logged-in user for the current month
     const phone = req.session.phone;
-    const currentMonth = new Date().getMonth() + 1; // Get the current month (1-indexed)
+    const currentMonth = new Date().getMonth(); // Get the current month (1-indexed)
     const currentYear = new Date().getFullYear(); // Get the current year
 
     // Construct the start and end date of the current month
-    const startDate = new Date(currentYear, currentMonth - 1, 1); // 1st day of the current month
-    const endDate = new Date(currentYear, currentMonth, 0); // Last day of the current month
-
+    const startDate = new Date(currentYear, currentMonth, 1); // 1st day of the current month
+    const endDate = new Date(currentYear, currentMonth, +1, 0); // Last day of the next month
+    
     // Format the dates as YYYY-MM-DD strings
     const formattedStartDate = startDate.toISOString().split('T')[0];
     const formattedEndDate = endDate.toISOString().split('T')[0];
@@ -498,24 +498,26 @@ app.post('/analyzeFinancialData', (req, res) => {
     console.log(`Data to be analyzed: ${JSON.stringify(data)}`);
 
     // Spawn a Python process to execute the analysis script
-    const pythonProcess = spawn('python3', ['analysis.py', JSON.stringify(data)]);
+    const pythonProcess = spawn('python', ['analysis.py', JSON.stringify(data)]);
 
     let analysisResult = '';
+    let errorOutput = '';
 
     // Capture stdout data from the Python script
     pythonProcess.stdout.on('data', (result) => {
         analysisResult += result.toString();
     });
 
+    // Capture stderr data from the Python script
     pythonProcess.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
+        errorOutput += data.toString();
     });
 
     // When Python process ends
     pythonProcess.on('close', (code) => {
         if (code !== 0) {
             console.error('Python process exited with error code:', code);
-            res.status(500).json({ error: 'Internal Server Error' });
+            res.status(500).json({ error: 'Internal Server Error', details: errorOutput });
         } else {
             try {
                 // Send the result back to the client as plain text
@@ -578,8 +580,10 @@ app.get('/logout', (req, res) => {
             console.error('Error destroying session:', err);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
+        // Construct the base URL dynamically
+        const baseUrl = `${req.protocol}://${req.headers.host}`;
         // Redirect user to the login page
-        res.redirect('http://localhost:3000'); // Change the path to your actual login page
+        res.redirect(`${baseUrl}`);
     });
 });
 
