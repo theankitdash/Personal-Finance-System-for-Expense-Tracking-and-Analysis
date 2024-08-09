@@ -4,6 +4,7 @@ const mysql = require('mysql');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const { spawn } = require('child_process');
+const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -18,6 +19,13 @@ app.use(session({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const sslOptions = process.env.DB_USE_SSL === 'true' ? {
+    rejectUnauthorized: true,
+    ca: process.env.DB_CA ? fs.readFileSync(process.env.DB_CA) : undefined,
+    key: process.env.DB_KEY ? fs.readFileSync(process.env.DB_KEY) : undefined,
+    cert: process.env.DB_CERT ? fs.readFileSync(process.env.DB_CERT) : undefined
+} : null;
+
 // MySQL database setup
 const db = mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
@@ -25,6 +33,7 @@ const db = mysql.createConnection({
     password: process.env.DB_PASSWORD || 'Chiku@4009',
     database: process.env.DB_NAME || 'finance-tracker',
     port: process.env.DB_PORT || 3306,
+    ssl: sslOptions  
 });
 
 db.connect((err) => {
