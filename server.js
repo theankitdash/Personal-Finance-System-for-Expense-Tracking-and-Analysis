@@ -127,7 +127,6 @@ app.post('/auth/register', async (req, res) => {
             console.error('Error inserting user:', err.message);
             return res.status(400).json({ success: false, message: 'Phone Number Already Exists!' });
         }
-
         req.session.phone = phone;
         res.json({ success: true });
     });
@@ -149,7 +148,6 @@ app.post('/auth/verify', async (req, res) => {
             if (results.length === 0) {
                 return res.status(400).json({ success: false, message: 'Verification failed' });
             }
-
             res.json({ success: true });
         });
     } catch (error) {
@@ -569,10 +567,7 @@ app.get('/logout', (req, res) => {
             console.error('Error destroying session:', err);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
-        // Construct the base URL dynamically
-        const baseUrl = `${req.protocol}://${req.headers.host}`;
-        // Redirect user to the login page
-        res.redirect(`${baseUrl}`);
+        res.status(200).json({ success: true, message: 'Logged out successfully' });
     });
 });
 
