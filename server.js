@@ -454,8 +454,7 @@ app.get('/expensesData', (req, res) => {
     // Query to fetch detailed data within the specified date range
     let detailedQuery = `
         SELECT category, amount, date
-        FROM expenses
-        WHERE date >= ? AND date <= ?
+        FROM expenses      
     `;
 
     const queryParams = [fromDate, toDate];
@@ -480,12 +479,16 @@ app.get('/expensesData', (req, res) => {
 // Route to perform financial analysis
 app.post('/analyzeFinancialData', (req, res) => {
     // Extract financial data from request body
-    const { data } = req.body;
+    const { aggregatedData, detailedData } = req.body;
 
-    console.log(`Data to be analyzed: ${JSON.stringify(data)}`);
+    console.log(`Aggregated Data to be analyzed: ${JSON.stringify(aggregatedData)}`);
+    console.log(`Detailed Data to be analyzed: ${JSON.stringify(detailedData)}`);
+
+    // Prepare data for the Python script
+    const inputData = JSON.stringify({ aggregatedData, detailedData });
 
     // Spawn a Python process to execute the analysis script
-    const pythonProcess = spawn('python', ['analysis.py', JSON.stringify(data)]);
+    const pythonProcess = spawn('python', ['analysis.py', inputData]);
 
     let analysisResult = '';
     let errorOutput = '';
@@ -507,12 +510,13 @@ app.post('/analyzeFinancialData', (req, res) => {
             res.status(500).json({ error: 'Internal Server Error', details: errorOutput });
         } else {
             try {
-                // Send the result back to the client as plain text
+                // Attempt to parse the result as JSON
+                const parsedResult = JSON.parse(analysisResult);
+                res.json(parsedResult);
+            } catch (error) {
+                console.warn('Error parsing JSON, returning plain text:', error);
                 res.set('Content-Type', 'text/plain');
                 res.send(analysisResult);
-            } catch (error) {
-                console.error('Error parsing JSON:', error);
-                res.status(500).json({ error: 'Internal Server Error' });
             }
         }
     });

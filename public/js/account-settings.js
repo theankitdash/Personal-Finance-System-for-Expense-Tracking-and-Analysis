@@ -99,15 +99,26 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Add event listener to the logout button
+    const urls = {
+        production: 'https://the-finance-tracker.azurewebsites.net',
+        development: 'http://localhost:3000'
+    };
+
+    // Determine the environment
+    const isProduction = window.location.hostname === 'www.the-finance-tracker.azurewebsites.net';
+    const loginUrl = isProduction ? urls.production : urls.development;
+    
     const logoutBtn = document.getElementById('logoutBtn');
     logoutBtn.addEventListener('click', function() {
         // Send request to logout
         fetch('/logout')
         .then(response => {
             if (response.redirected) {
-                // Dynamically construct the base URL
-                const baseUrl = window.location.origin;
-                window.location.href = `${baseUrl}`; // Redirect to the login page
+                // Redirect to the login page
+                window.location.href = response.url; 
+            } else if (response.ok) {
+                // Redirect to the login page
+                window.location.href = loginUrl; 
             } else {
                 throw new Error('Failed to logout');
             }

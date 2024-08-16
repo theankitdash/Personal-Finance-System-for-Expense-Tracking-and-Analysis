@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (fromDate && toDate) {
             loadingIndicator.style.display = 'flex';
-            await fetchAndAnalyzeExpenses(fromDate, toDate);
+            await AnalyzeExpenses();
             loadingIndicator.style.display = 'none';
         } else {
             alert('Please select valid dates.');
@@ -47,23 +47,29 @@ async function fetchExpensesData(fromDate, toDate) {
 
         if (data.aggregatedData.length > 0) {
             renderPieChart(data.aggregatedData);
+            // Store aggregated and detailed data for later analysis
+            document.getElementById('graph').dataset.aggregatedData = JSON.stringify(data.aggregatedData);
+            document.getElementById('graph').dataset.detailedExpenses = JSON.stringify(data.detailedData);
         } else {
             alert('No data available for the selected date range.');
         }
-
-        // Store detailed data in a hidden field or a global variable for analysis
-        document.getElementById('graph').dataset.detailedExpenses = JSON.stringify(data.detailedData);
     } catch (error) {
         console.error('Error fetching expenses data:', error);
         alert('An error occurred while fetching expenses data.');
     }
 }
 
-async function fetchAndAnalyzeExpenses(fromDate, toDate) {
+async function AnalyzeExpenses() {
     try {
-        const expensesData = JSON.parse(document.getElementById('graph').dataset.detailedExpenses || '[]');
+        const detailedExpenses = JSON.parse(document.getElementById('graph').dataset.detailedExpenses || '[]');
+        const aggregatedData = JSON.parse(document.getElementById('graph').dataset.aggregatedData || '[]');
 
-        if (expensesData.length === 0) {
+        if (aggregatedData.length === 0) {
+            alert('No aggregated data available for analysis.');
+            return;
+        }
+
+        if (detailedExpenses.length === 0) {
             alert('No detailed data available for analysis.');
             return;
         }
@@ -73,7 +79,9 @@ async function fetchAndAnalyzeExpenses(fromDate, toDate) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ data: expensesData })
+            body: JSON.stringify({ detailedData: detailedExpenses,
+                              aggregatedData: aggregatedData
+             })
         });
 
         if (!response.ok) {
@@ -142,6 +150,13 @@ function getBorderColor(length) {
         'rgba(83, 102, 255, 1)',
         'rgba(255, 255, 99, 1)'
     ].slice(0, length);
+}
+
+function updateAnalysisResults(aggregatedExpenses) {
+    // Show results using aggregated data
+    const analysisResultsDiv = document.getElementById('analysis-results');
+    analysisResultsDiv.textContent = aggregatedExpenses;
+    document.getElementById('analysis-section').style.display = 'block';
 }
 
 function updateAnalysisResults(data) {
