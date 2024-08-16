@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Determine the environment
-    const isProduction = window.location.hostname === 'www.the-finance-tracker.azurewebsites.net';
+    const isProduction = window.location.hostname === 'the-finance-tracker.azurewebsites.net';
     const loginUrl = isProduction ? urls.production : urls.development;
     
     const logoutBtn = document.getElementById('logoutBtn');
