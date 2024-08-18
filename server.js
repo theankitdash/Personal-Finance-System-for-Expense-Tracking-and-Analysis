@@ -510,13 +510,12 @@ app.post('/analyzeFinancialData', (req, res) => {
             res.status(500).json({ error: 'Internal Server Error', details: errorOutput });
         } else {
             try {
-                // Attempt to parse the result as JSON
-                const parsedResult = JSON.parse(analysisResult);
-                res.json(parsedResult);
-            } catch (error) {
-                console.warn('Error parsing JSON, returning plain text:', error);
+                // Send the result back to the client as plain text
                 res.set('Content-Type', 'text/plain');
                 res.send(analysisResult);
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+                res.status(500).json({ error: 'Internal Server Error' });
             }
         }
     });
