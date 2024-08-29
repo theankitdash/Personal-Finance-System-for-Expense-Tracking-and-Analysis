@@ -152,13 +152,6 @@ function getBorderColor(length) {
     ].slice(0, length);
 }
 
-function updateAnalysisResults(aggregatedExpenses) {
-    // Show results using aggregated data
-    const analysisResultsDiv = document.getElementById('analysis-results');
-    analysisResultsDiv.textContent = aggregatedExpenses;
-    document.getElementById('analysis-section').style.display = 'block';
-}
-
 function updateAnalysisResults(data) {
     const analysisResultsDiv = document.getElementById('analysis-results');
     analysisResultsDiv.textContent = data;

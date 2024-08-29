@@ -4,7 +4,6 @@ const mysql = require('mysql');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const { spawn } = require('child_process');
-const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -478,6 +477,7 @@ app.get('/expensesData', (req, res) => {
 
 // Route to perform financial analysis
 app.post('/analyzeFinancialData', (req, res) => {
+
     // Extract financial data from request body
     const { aggregatedData, detailedData } = req.body;
 
@@ -487,15 +487,19 @@ app.post('/analyzeFinancialData', (req, res) => {
     // Prepare data for the Python script
     const inputData = JSON.stringify({ aggregatedData, detailedData });
 
-    // Spawn a Python process to execute the analysis script
-    const pythonProcess = spawn('python', ['analysis.py', inputData]);
+    // Spawn a Python process and pass data via stdin
+    const pythonProcess = spawn('python', ['analysis.py']);
 
     let analysisResult = '';
     let errorOutput = '';
 
+    // Write data to the Python process stdin
+    pythonProcess.stdin.write(inputData);
+    pythonProcess.stdin.end();
+
     // Capture stdout data from the Python script
-    pythonProcess.stdout.on('data', (result) => {
-        analysisResult += result.toString();
+    pythonProcess.stdout.on('data', (data) => {
+        analysisResult += data.toString();
     });
 
     // Capture stderr data from the Python script
@@ -526,7 +530,7 @@ app.post('/analyzeFinancialData', (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     });
 });
-
+    
 
 //Endpoint to change the user's password
 app.post('/changePassword', async (req, res) => {
