@@ -33,8 +33,8 @@ def analyze_financial_data(aggregated_data, detailed_data):
         month_category_data = df_detailed.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0) 
     except KeyError as e:
         print(f"Missing column in detailed data: {e}", file=sys.stderr)
+        month_category_data = pd.DataFrame()
         
-
     # Generate report lines
     report_lines = []
 
@@ -52,8 +52,8 @@ def analyze_financial_data(aggregated_data, detailed_data):
         # Calculate the total amount spent
         total_amount = aggregated_totals.sum()
         report_lines.append(f"Total Amount Spent: INR {total_amount:.2f}")
-
-       
+    else:
+        report_lines.append("No aggregated data available.")   
     
     '''
     # Include the detailed data categorized by month    
@@ -69,7 +69,7 @@ def analyze_financial_data(aggregated_data, detailed_data):
         total_amount_dt = month_category_data.sum().sum()
         report_lines.append(f"Total Amount Spent: INR {total_amount_dt:.2f}")
     '''
-    return "\n".join(report_lines)
+    return "\n".join(report_lines), month_category_data
     
 
 def main():
@@ -80,7 +80,7 @@ def main():
         detailed_data = input_data.get('detailedData', [])
         
         # Analyze financial data
-        report = analyze_financial_data(aggregated_data, detailed_data)
+        report,_ = analyze_financial_data(aggregated_data, detailed_data)
         print(report)  # Print the report lines
         
     except json.JSONDecodeError:
