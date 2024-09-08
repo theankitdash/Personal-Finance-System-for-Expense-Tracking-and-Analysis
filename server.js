@@ -444,7 +444,7 @@ app.get('/expensesData', (req, res) => {
 
     // Query to fetch aggregated data within the specified date range
     let aggregatedQuery = `
-        SELECT category, SUM(amount) AS total_amount
+        SELECT category, SUM(amount) AS total_amount, ? AS start_date, ? AS end_date
         FROM expenses
         WHERE date >= ? AND date <= ?
         GROUP BY category
@@ -456,15 +456,13 @@ app.get('/expensesData', (req, res) => {
         FROM expenses      
     `;
 
-    const queryParams = [fromDate, toDate];
-
-    db.query(aggregatedQuery, queryParams, (err, aggregatedResults) => {
+    db.query(aggregatedQuery, [fromDate, toDate, fromDate, toDate], (err, aggregatedResults) => {
         if (err) {
             console.error('Error retrieving Data:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
 
-        db.query(detailedQuery, queryParams, (err, detailedResults) => {
+        db.query(detailedQuery, [fromDate, toDate], (err, detailedResults) => {
             if (err) {
                 console.error('Error retrieving Data:', err.message);
                 return res.status(500).json({ success: false, message: 'Internal Server Error' });

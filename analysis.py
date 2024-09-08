@@ -8,24 +8,39 @@ def analyze_financial_data(aggregated_data, detailed_data):
     df_aggregated = pd.DataFrame(aggregated_data)
     df_detailed = pd.DataFrame(detailed_data)
 
+    # Convert date fields to datetime
+    df_aggregated['start_date'] = pd.to_datetime(df_aggregated['start_date'])
+    df_aggregated['end_date'] = pd.to_datetime(df_aggregated['end_date'])
+
     # Aggregate Data Analysis
     try:
         aggregated_totals = df_aggregated.groupby('category')['total_amount'].sum()
+
+        # Get the overall date range and month names
+        start_date = df_aggregated['start_date'].min()
+        end_date = df_aggregated['end_date'].max()
+        start_date_str = start_date.strftime('%d %B %Y')
+        end_date_str = end_date.strftime('%d %B %Y')
     except KeyError as e:
         print(f"Missing column in aggregated data: {e}", file=sys.stderr)
         aggregated_totals = pd.Series(dtype=float)
+        start_date_str = end_date_str = "N/A"
 
     # Detailed Data Analysis
     try:
         df_detailed['date'] = pd.to_datetime(df_detailed['date']) + timedelta(days=1)
         df_detailed['month'] = df_detailed['date'].dt.strftime('%b-%Y')
-        month_category_data = df_detailed.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0)
+        month_category_data = df_detailed.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0) 
     except KeyError as e:
         print(f"Missing column in detailed data: {e}", file=sys.stderr)
-        month_category_data = pd.DataFrame()
+        
 
     # Generate report lines
     report_lines = []
+
+    # Include the date range with full dates at the top of the report
+    report_lines.append(f"Selected Dates: {start_date_str} to {end_date_str}")
+    report_lines.append(" ")
 
     # Include the aggregated totals in the report
     if not aggregated_totals.empty:
@@ -37,6 +52,8 @@ def analyze_financial_data(aggregated_data, detailed_data):
         # Calculate the total amount spent
         total_amount = aggregated_totals.sum()
         report_lines.append(f"Total Amount Spent: INR {total_amount:.2f}")
+
+       
     
     '''
     # Include the detailed data categorized by month    
@@ -52,7 +69,7 @@ def analyze_financial_data(aggregated_data, detailed_data):
         total_amount_dt = month_category_data.sum().sum()
         report_lines.append(f"Total Amount Spent: INR {total_amount_dt:.2f}")
     '''
-    return "\n".join(report_lines), month_category_data
+    return "\n".join(report_lines)
     
 
 def main():
@@ -64,7 +81,7 @@ def main():
         
         # Analyze financial data
         report = analyze_financial_data(aggregated_data, detailed_data)
-        print(report[0])  # Print the report lines
+        print(report)  # Print the report lines
         
     except json.JSONDecodeError:
         print("Invalid JSON data provided.", file=sys.stderr)
