@@ -442,34 +442,20 @@ app.get('/expensesData', (req, res) => {
     // Fetch data for the analysis based on selected date range
     const { fromDate, toDate } = req.query;
 
-    // Query to fetch aggregated data within the specified date range
-    let aggregatedQuery = `
-        SELECT category, SUM(amount) AS total_amount, ? AS start_date, ? AS end_date
+    // Query to fetch data within the specified date range
+    let Query = `
+        SELECT category, amount, description, date 
         FROM expenses
         WHERE date >= ? AND date <= ?
-        GROUP BY category
     `;
 
-    // Query to fetch detailed data within the specified date range
-    let detailedQuery = `
-        SELECT category, amount, date
-        FROM expenses      
-    `;
-
-    db.query(aggregatedQuery, [fromDate, toDate, fromDate, toDate], (err, aggregatedResults) => {
+    db.query(Query, [fromDate, toDate], (err, Result) => {
         if (err) {
             console.error('Error retrieving Data:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
 
-        db.query(detailedQuery, [fromDate, toDate], (err, detailedResults) => {
-            if (err) {
-                console.error('Error retrieving Data:', err.message);
-                return res.status(500).json({ success: false, message: 'Internal Server Error' });
-            }
-
-            res.json({ aggregatedData: aggregatedResults, detailedData: detailedResults });
-        });
+        res.json({aggregatedData: Result});
     });
 });
 
@@ -477,13 +463,12 @@ app.get('/expensesData', (req, res) => {
 app.post('/analyzeFinancialData', (req, res) => {
 
     // Extract financial data from request body
-    const { aggregatedData, detailedData } = req.body;
+    const { aggregatedData } = req.body;
 
     console.log(`Aggregated Data to be analyzed: ${JSON.stringify(aggregatedData)}`);
-    console.log(`Detailed Data to be analyzed: ${JSON.stringify(detailedData)}`);
 
     // Prepare data for the Python script
-    const inputData = JSON.stringify({ aggregatedData, detailedData });
+    const inputData = JSON.stringify({aggregatedData});
 
     // Spawn a Python process and pass data via stdin
     const pythonProcess = spawn('python', ['analysis.py']);

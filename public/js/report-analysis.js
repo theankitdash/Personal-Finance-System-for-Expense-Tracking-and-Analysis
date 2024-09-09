@@ -47,9 +47,7 @@ async function fetchExpensesData(fromDate, toDate) {
 
         if (data.aggregatedData.length > 0) {
             renderPieChart(data.aggregatedData);
-            // Store aggregated and detailed data for later analysis
             document.getElementById('graph').dataset.aggregatedData = JSON.stringify(data.aggregatedData);
-            document.getElementById('graph').dataset.detailedExpenses = JSON.stringify(data.detailedData);
         } else {
             alert('No data available for the selected date range.');
         }
@@ -61,16 +59,10 @@ async function fetchExpensesData(fromDate, toDate) {
 
 async function AnalyzeExpenses() {
     try {
-        const detailedExpenses = JSON.parse(document.getElementById('graph').dataset.detailedExpenses || '[]');
         const aggregatedData = JSON.parse(document.getElementById('graph').dataset.aggregatedData || '[]');
 
         if (aggregatedData.length === 0) {
             alert('No aggregated data available for analysis.');
-            return;
-        }
-
-        if (detailedExpenses.length === 0) {
-            alert('No detailed data available for analysis.');
             return;
         }
 
@@ -79,8 +71,7 @@ async function AnalyzeExpenses() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ detailedData: detailedExpenses,
-                              aggregatedData: aggregatedData
+            body: JSON.stringify({ aggregatedData: aggregatedData
              })
         });
 
@@ -96,8 +87,28 @@ async function AnalyzeExpenses() {
     }
 }
 
-function renderPieChart(aggregatedData) {
+function aggregateData(rawData) {
+    const aggregatedData = {};
+
+    rawData.forEach(expense => {
+        const { category, amount } = expense;
+        if (aggregatedData[category]) {
+            aggregatedData[category] += amount;  
+        } else {
+            aggregatedData[category] = amount;  
+        }
+    });
+
+    return Object.keys(aggregatedData).map(category => ({
+        category,
+        total_amount: aggregatedData[category]  
+    }));
+}
+
+function renderPieChart(rawData) {
+    const aggregatedData = aggregateData(rawData);
     const ctx = document.getElementById('graph').getContext('2d');
+
     if (chartInstance) {
         chartInstance.destroy();
     }
