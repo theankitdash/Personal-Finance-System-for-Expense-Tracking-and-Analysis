@@ -25,29 +25,68 @@
 
     <div class="container">
         <div class="left-content">
-            <h1>Financial Spending Analysis</h1>
-            <form id="date-form">
-                <label for="from-date">From:</label>
-                <input type="date" id="from-date" name="from-date" required>
-                <label for="to-date">To:</label>
-                <input type="date" id="to-date" name="to-date" required>
-                <button id="submit-btn" type="submit">Submit</button>
+            <h1>Budget for Each Category</h1>
+            <form id="budget-form">
+                <div class="category-budget">
+                    <label for="housing-budget">Housing:</label>
+                    <input type="number" id="housing-budget" name="housing-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="food-budget">Food:</label>
+                    <input type="number" id="food-budget" name="food-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="transportation-budget">Transportation:</label>
+                    <input type="number" id="transportation-budget" name="transportation-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="utilities-budget">Utilities:</label>
+                    <input type="number" id="utilities-budget" name="utilities-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="investment-budget">Investment:</label>
+                    <input type="number" id="investment-budget" name="investment-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="clothing-budget">Clothing:</label>
+                    <input type="number" id="clothing-budget" name="clothing-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="medical-budget">Medical:</label>
+                    <input type="number" id="medical-budget" name="medical-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="other-budget">Other:</label>
+                    <input type="number" id="other-budget" name="other-budget" placeholder="Enter amount" min="0">
+                </div>
+                <button id="save-budget-btn" type="button">Save Budget</button>
             </form>
-            <div id="graph-container">
-                <!-- Graphs will be displayed here -->
-                <canvas id="graph"></canvas>
-            </div>
+            
         </div>
         <div class="right-content">
+            <h1>Track your Expenses</h1>
+                <form id="date-form">
+                    <label for="from-date">From:</label>
+                    <input type="date" id="from-date" name="from-date" required>
+                    <label for="to-date">To:</label>
+                    <input type="date" id="to-date" name="to-date" required>
+                    <button id="submit-btn" type="submit">Submit</button>
+                </form>
+            <div id="graph-analysis-container">
+                <div id="graph-container">
+                    <!-- Graphs will be displayed here -->
+                    <canvas id="graph"></canvas>
+                </div>
+                <section id="analysis-section">
+                    <h1>Analysis Results</h1>
+                    <div id="analysis-results" role="region" aria-live="polite">
+                        <!-- Analysis results will be displayed here -->
+                    </div>
+                </section>
+            </div>    
             <div id="loading-indicator">
                 <p>Loading Analysis Results...</p>
             </div>
-            <section id="analysis-section" style="display: none;">
-                <h1>Analysis Results</h1>
-                <div id="analysis-results" role="region" aria-live="polite">
-                    <!-- Analysis results will be displayed here -->
-                </div>
-            </section>
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>

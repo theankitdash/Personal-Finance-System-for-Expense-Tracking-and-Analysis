@@ -61,6 +61,21 @@ db.connect((err) => {
             }
         });
 
+        // Create a 'budget' table if it doesn't exist
+        db.query(`
+            CREATE TABLE IF NOT EXISTS budget (
+                phone BIGINT NOT NULL,
+                category VARCHAR(100) NOT NULL,
+                amount DECIMAL(10, 2) NOT NULL,
+                PRIMARY KEY (phone, category),
+                FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
+            )
+        `, (err) => {
+            if (err) {
+                console.error('Error creating table:', err.message);
+            }
+        });
+
         // Create a 'expenses' table if it doesn't exist
         db.query(`
             CREATE TABLE IF NOT EXISTS expenses (
@@ -70,7 +85,8 @@ db.connect((err) => {
                 amount DECIMAL(10, 2) NOT NULL,
                 description VARCHAR(200) NOT NULL,
                 category VARCHAR(100) NOT NULL,
-                FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
+                FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE,
+                FOREIGN KEY (category) REFERENCES budget(category) ON DELETE CASCADE ON UPDATE CASCADE
             )
         `, (err) => {
             if (err) {
@@ -189,28 +205,62 @@ app.get('/Details', (req, res) => {
     const phone = req.session.phone;
 
     // Combine both queries into a single query using JOIN
-    const combinedQuery = `
-        SELECT pd.name, pd.gender, pd.date_of_birth, e.date, e.amount, e.description, e.category
+    const budgetQuery = `
+        SELECT pd.name, pd.gender, pd.date_of_birth AS dateOfBirth,
+               b.category AS budgetCategory, b.amount AS budgetAmount       
+        FROM personal_details pd
+        LEFT JOIN budget b ON pd.phone = b.phone 
+        WHERE pd.phone = ?
+    `;
+
+    const expenseQuery = `
+        SELECT pd.name, pd.gender, pd.date_of_birth AS dateOfBirth, 
+               e.date AS expenseDate, e.amount AS expenseAmount, e.description AS expenseDescription, e.category AS expenseCategory       
         FROM personal_details pd
         LEFT JOIN expenses e ON pd.phone = e.phone
         WHERE pd.phone = ?
     `;
 
-    // Execute the combined query
-    db.query(combinedQuery, [phone], (err, results) => {
+    // Execute both queries
+    db.query(budgetQuery, [phone], (err, budgetResults) => {
         if (err) {
-            console.error('Error retrieving details:', err.message);
+            console.error('Error retrieving budget details:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
 
-        if (results.length === 0) {
-            return res.json({ success: true, message: 'No details available' });
+        // If no results for the first query
+        if (budgetResults.length === 0) {
+            return res.json({ success: true, message: 'No budget details available' });
         }
 
+        const personalDetails = {
+            name: budgetResults[0].name,
+            gender: budgetResults[0].gender,
+            dateOfBirth: budgetResults[0].dateOfBirth
+        };
 
-        // Send the response with combined personal and budget information
-        const { name, gender, date_of_birth: dateOfBirth, date, amount, description, category} = results[0];
-        res.json({ success: true, phone, name, gender, dateOfBirth, date, amount, description, category});
+        const budgets = budgetResults.map(row => ({
+            category: row.budgetCategory,
+            amount: row.budgetAmount
+        }));
+
+        // Now execute the expense query after getting the budget data
+        db.query(expenseQuery, [phone], (err, expenseResults) => {
+            if (err) {
+                console.error('Error retrieving expense details:', err.message);
+                return res.status(500).json({ success: false, message: 'Internal Server Error' });
+            }
+
+            const expenses = expenseResults.map(row => ({
+                date: row.expenseDate,
+                amount: row.expenseAmount,
+                description: row.expenseDescription,
+                category: row.expenseCategory
+            }));
+
+            // Send the combined response with personal, budget, and expense details
+            res.json({success: true, phone, personalDetails, budgets, expenses});
+        });
     });
 });
 
@@ -431,6 +481,32 @@ app.delete('/expenses/:id', (req, res) => {
     });
 });
 
+// Endpoint to save or update budget details
+app.post('/saveBudgetDetails', (req, res) => {
+    // Check if the user is logged in
+    if (!req.session.phone) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const { category, amount } = req.body;
+    const phone = req.session.phone;
+
+    // Insert or update the budget details for the user
+    const insertOrUpdateBudgetQuery = `
+        INSERT INTO budget (phone, category, amount)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE amount=?
+    `;
+
+    db.query(insertOrUpdateBudgetQuery, [phone, category, amount, amount], (err) => {
+        if (err) {
+            console.error('Error saving budget details:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+        res.json({ success: true, message: 'Budget details saved successfully' });
+    });
+});
+
 
 // Endpoint to retrieve data for the analysis
 app.get('/expensesData', (req, res) => {
@@ -441,6 +517,7 @@ app.get('/expensesData', (req, res) => {
 
     // Fetch data for the analysis based on selected date range
     const { fromDate, toDate } = req.query;
+    
 
     // Query to fetch data within the specified date range
     let Query = `

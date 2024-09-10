@@ -3,7 +3,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   try {
     // Fetch current user's details
     const userResponse = await fetch('/Details');
-    if (!userResponse.ok) throw new Error('Failed to fetch current credentials');
+    if (!userResponse.ok) 
+      throw new Error('Failed to fetch current credentials');
     const userData = await userResponse.json();
 
     // Display Name
