@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // Fetch current user's details
-    fetch('/Details')
+    fetch('/getBudgetDetails')
     .then(response => {
         if (response.ok) {
             return response.json();
@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Populate the input fields with fetched data
             document.getElementById('clothing-budget').value = budgetDict['Clothing'] || '';
+            document.getElementById('entertainment-budget').value = budgetDict['Entertainment'] || '';
             document.getElementById('food-budget').value = budgetDict['Food'] || '';
             document.getElementById('housing-budget').value = budgetDict['Housing'] || '';
             document.getElementById('investment-budget').value = budgetDict['Investment'] || '';
@@ -40,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('save-budget-btn').addEventListener('click', function() {
         const budgetDetails = {
             'Clothing': document.getElementById('clothing-budget').value,
+            'Entertainment': document.getElementById('entertainment-budget').value,
             'Food': document.getElementById('food-budget').value,
             'Housing': document.getElementById('housing-budget').value,
             'Investment': document.getElementById('investment-budget').value,
@@ -232,7 +234,8 @@ function getBackgroundColor(length) {
         'rgba(255, 159, 64, 0.2)',
         'rgba(199, 199, 199, 0.2)',
         'rgba(83, 102, 255, 0.2)',
-        'rgba(255, 255, 99, 0.2)'
+        'rgba(255, 255, 99, 0.2)',
+        'rgba(255, 105, 180, 0.2)'
     ].slice(0, length);
 }
 
@@ -246,7 +249,8 @@ function getBorderColor(length) {
         'rgba(255, 159, 64, 1)',
         'rgba(199, 199, 199, 1)',
         'rgba(83, 102, 255, 1)',
-        'rgba(255, 255, 99, 1)'
+        'rgba(255, 255, 99, 1)',
+        'rgba(255, 105, 180, 1)'
     ].slice(0, length);
 }
 

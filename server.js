@@ -195,7 +195,7 @@ app.post('/auth/resetPassword', async (req, res) => {
 
 
 //Endpoint to get current phone number and password
-app.get('/Details', (req, res) => {
+app.get('/personalDetails', (req, res) => {
     // Check if the user is logged in
     if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -204,63 +204,28 @@ app.get('/Details', (req, res) => {
     // Fetch current credentials for the logged-in user
     const phone = req.session.phone;
 
-    // Combine both queries into a single query using JOIN
-    const budgetQuery = `
-        SELECT pd.name, pd.gender, pd.date_of_birth AS dateOfBirth,
-               b.category AS budgetCategory, b.amount AS budgetAmount       
-        FROM personal_details pd
-        LEFT JOIN budget b ON pd.phone = b.phone 
-        WHERE pd.phone = ?
+    const personalDetailsQuery = `
+        SELECT name, gender, date_of_birth AS dateOfBirth             
+        FROM personal_details  
+        WHERE phone = ?
     `;
 
-    const expenseQuery = `
-        SELECT pd.name, pd.gender, pd.date_of_birth AS dateOfBirth, 
-               e.date AS expenseDate, e.amount AS expenseAmount, e.description AS expenseDescription, e.category AS expenseCategory       
-        FROM personal_details pd
-        LEFT JOIN expenses e ON pd.phone = e.phone
-        WHERE pd.phone = ?
-    `;
-
-    // Execute both queries
-    db.query(budgetQuery, [phone], (err, budgetResults) => {
+    // Execute queries
+    db.query(personalDetailsQuery, [phone], (err, results) => {
         if (err) {
-            console.error('Error retrieving budget details:', err.message);
+            console.error('Error retrieving personal details:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
 
-        // If no results for the first query
-        if (budgetResults.length === 0) {
-            return res.json({ success: true, message: 'No budget details available' });
+        // Check if any details were returned
+        if (results.length === 0) {
+            return res.status(404).json({ success: false, message: 'No personal details found' });
         }
 
-        const personalDetails = {
-            name: budgetResults[0].name,
-            gender: budgetResults[0].gender,
-            dateOfBirth: budgetResults[0].dateOfBirth
-        };
+        const personalDetails = results[0];
 
-        const budgets = budgetResults.map(row => ({
-            category: row.budgetCategory,
-            amount: row.budgetAmount
-        }));
-
-        // Now execute the expense query after getting the budget data
-        db.query(expenseQuery, [phone], (err, expenseResults) => {
-            if (err) {
-                console.error('Error retrieving expense details:', err.message);
-                return res.status(500).json({ success: false, message: 'Internal Server Error' });
-            }
-
-            const expenses = expenseResults.map(row => ({
-                date: row.expenseDate,
-                amount: row.expenseAmount,
-                description: row.expenseDescription,
-                category: row.expenseCategory
-            }));
-
-            // Send the combined response with personal, budget, and expense details
-            res.json({success: true, phone, personalDetails, budgets, expenses});
-        });
+        res.json({success: true, phone, personalDetails});
+       
     });
 });
 
@@ -542,6 +507,31 @@ app.post('/saveBudgetDetails', (req, res) => {
             return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
         res.json({ success: true, message: 'Budget details saved successfully' });
+    });
+});
+
+// Endpoint to get budget details
+app.get('/getBudgetDetails', (req, res) => {
+    // Check if the user is logged in
+    if (!req.session.phone) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const phone = req.session.phone;
+
+    // Query to get the budget details for the user
+    const getBudgetDetailsQuery = `
+        SELECT category, amount
+        FROM budget
+        WHERE phone = ?
+    `;
+
+    db.query(getBudgetDetailsQuery, [phone], (err, results) => {
+        if (err) {
+            console.error('Error retrieving budget details:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+        res.json({ success: true, budgets: results });
     });
 });
 

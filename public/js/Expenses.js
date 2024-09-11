@@ -48,19 +48,6 @@ document.addEventListener('DOMContentLoaded', function() {
         alert(`An error occurred: ${message}`);
     }
 
-    // Fetch current user's details
-    fetch('/Details')
-    .then(response => {
-        if (response.ok) {
-            return response.json();
-        } else {
-            throw new Error('Failed to fetch current credentials');
-        }
-    })
-    .catch(error => {
-        handleFetchError(error, 'Error fetching user details');
-    });
-
     // Add event listener to the form submission
     const saveExpenseBtn = document.getElementById('saveExpenseBtn');
     

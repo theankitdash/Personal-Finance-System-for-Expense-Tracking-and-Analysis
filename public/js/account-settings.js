@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     
-    fetch('/Details') // Endpoint to get the current user's Details
+    fetch('/personalDetails') // Endpoint to get the current user's Details
         .then(response => {
             if (response.ok) {
                 return response.json();
@@ -13,9 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('newPassword').value = ''; // Clear the new password field
 
             // Display personal details
-            document.getElementById('name').value = data.name || '';
-            document.getElementById('gender').value = data.gender || '';
-            document.getElementById('dateOfBirth').value = formatDate(data.dateOfBirth) || '';
+            document.getElementById('name').value = data.personalDetails.name || '';
+            document.getElementById('gender').value = data.personalDetails.gender || '';
+            document.getElementById('dateOfBirth').value = formatDate(data.personalDetails.dateOfBirth) || '';
         })
         .catch(error => {
             console.error('Error:', error);

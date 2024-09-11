@@ -1,34 +1,37 @@
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', function() {
+  
   // Fetch current user's details
-  try {
-    // Fetch current user's details
-    const userResponse = await fetch('/Details');
-    if (!userResponse.ok) 
-      throw new Error('Failed to fetch current credentials');
-    const userData = await userResponse.json();
+  fetch('/personalDetails')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch current credentials');
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Display Name
+      document.getElementById('name').textContent = data.personalDetails.name || '';
 
-    // Display Name
-    document.getElementById('name').textContent = userData.name || '';
-
-    // Fetch and render expense data for the current month
-    await fetchCurrentMonthExpenses();
-  } catch (error) {
-    console.error('Error:', error);
-    alert('An error occurred while fetching current credentials');
-  }
+      // Fetch and render expense data for the current month
+      fetchCurrentMonthExpenses();
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while fetching current credentials');
+    });
 });
 
-async function fetchCurrentMonthExpenses() {
-  try {
-    // Fetch expenses data for the current month
-    const expensesResponse = await fetch('/currentMonthExpenses');
-    const expensesData = await expensesResponse.json();
 
-    // Process the data and create the bar graph
-    renderBarGraph(expensesData);
-  } catch (error) {
-    console.error('Error fetching current month expenses:', error);
-  }
+function fetchCurrentMonthExpenses() {
+  fetch('/currentMonthExpenses')
+    .then(response => response.json())
+    .then(expensesData => {
+      // Process the data and create the bar graph
+      renderBarGraph(expensesData);
+    })
+    .catch(error => {
+      console.error('Error fetching current month expenses:', error);
+    });
 }
 
 
@@ -56,7 +59,8 @@ function renderBarGraph(expenses) {
       'rgba(255, 159, 64, 0.2)',
       'rgba(199, 199, 199, 0.2)',
       'rgba(83, 102, 255, 0.2)',
-      'rgba(255, 255, 99, 0.2)'
+      'rgba(255, 255, 99, 0.2)',
+      'rgba(255, 105, 180, 0.2)'
     ],
     border: [
       'rgba(255, 99, 132, 1)',
@@ -67,7 +71,8 @@ function renderBarGraph(expenses) {
       'rgba(255, 159, 64, 1)',
       'rgba(199, 199, 199, 1)',
       'rgba(83, 102, 255, 1)',
-      'rgba(255, 255, 99, 1)'
+      'rgba(255, 255, 99, 1)',
+     'rgba(255, 105, 180, 1)'
     ]
   };
 
