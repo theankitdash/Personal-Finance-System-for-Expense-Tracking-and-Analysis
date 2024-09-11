@@ -20,7 +20,7 @@ def analyze_financial_data(aggregated_data):
     report_lines = []
     report_lines.append(" ")
     
-    # Include the detailed data categorized by month    
+    # Include the data categorized by month    
     if not month_category_data.empty:
         for month, categories in month_category_data.iterrows():
             report_lines.append(f"Month: {month}")
