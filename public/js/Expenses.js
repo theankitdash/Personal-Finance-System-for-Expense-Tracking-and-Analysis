@@ -1,5 +1,37 @@
 document.addEventListener('DOMContentLoaded', function() {
 
+    // Function to fetch categories from the backend
+    async function fetchCategories() {
+        try {
+            const response = await fetch('/categories');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    const categories = data.categories;
+                    const categorySelect = document.getElementById('expenseCategory');
+
+                    // Clear any existing options
+                    categorySelect.innerHTML = '<option value="" disabled selected>Select category</option>';
+
+                    // Populate categories in the dropdown
+                    categories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category;
+                        option.textContent = category;
+                        categorySelect.appendChild(option);
+                    });
+                } else {
+                    throw new Error('Failed to fetch categories');
+                }
+            } else {
+                throw new Error('Failed to fetch categories from the server');
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            alert('Error fetching categories. Please try again later.');
+        }
+    }
+    
     // Function to format date as YYYY-MM-DD
     function formatDate(dateString) {
         if (!dateString) return ''; // Return empty string if date is not provided
@@ -303,6 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial setup
     updateFilterOptions();
+    fetchCategories();
     saveExpenseBtn.addEventListener('click', handleSaveOrUpdateButtonClick); // Ensure the event listener is added here
     fetchAllExpenses(); // Fetch all expenses on initial setup
 });
