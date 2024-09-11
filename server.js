@@ -66,7 +66,7 @@ db.connect((err) => {
             CREATE TABLE IF NOT EXISTS budget (
                 phone BIGINT NOT NULL,
                 category VARCHAR(100) NOT NULL,
-                amount DECIMAL(10, 2) NOT NULL,
+                amount DECIMAL(10, 2),
                 PRIMARY KEY (phone, category),
                 FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
             )
@@ -491,14 +491,23 @@ app.post('/saveBudgetDetails', (req, res) => {
     const { category, amount } = req.body;
     const phone = req.session.phone;
 
+    // Handle blank or invalid amount value
+    let amountValue;
+    if (amount === '' || amount === null || isNaN(parseFloat(amount))) {
+        amountValue = null;
+    } else {
+        amountValue = parseFloat(amount);
+    }
+
     // Insert or update the budget details for the user
     const insertOrUpdateBudgetQuery = `
         INSERT INTO budget (phone, category, amount)
         VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE amount=?
+        ON DUPLICATE KEY UPDATE 
+            amount = VALUES(amount)
     `;
 
-    db.query(insertOrUpdateBudgetQuery, [phone, category, amount, amount], (err) => {
+    db.query(insertOrUpdateBudgetQuery, [phone, category, amountValue], (err) => {
         if (err) {
             console.error('Error saving budget details:', err.message);
             return res.status(500).json({ success: false, message: 'Internal Server Error' });

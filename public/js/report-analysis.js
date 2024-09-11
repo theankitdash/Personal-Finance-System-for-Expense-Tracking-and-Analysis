@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     })
     .then(data => {    
-        console.log(data);
+        //console.log(data);
         if (data.success && Array.isArray(data.budgets)) {
             // Initialize a dictionary to hold budget values
             const budgetDict = {};
@@ -49,14 +49,11 @@ document.addEventListener('DOMContentLoaded', function() {
             'Utilities': document.getElementById('utilities-budget').value
         };
 
-        let alertShown = false;  // Flag to track if alert has been shown
-
         // Create an array to hold the promises
         const promises = [];
 
         // Loop through the budgetDetails object and send each category's amount to the server
         for (const [category, amount] of Object.entries(budgetDetails)) {
-            if (amount) {
                 // Push each fetch request promise into the promises array
                 promises.push(
                     // Send an AJAX POST request to the server
@@ -77,17 +74,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.error('Error saving budget details:', error);
                     })
                 );
-            }
         }
 
         // Use Promise.all to handle all fetch requests
-        Promise.all(promises).then(() => {
-            if (!alertShown) {
+        Promise.all(promises)
+            .then(() => {
                 alert('Budget details saved successfully.');
-                alertShown = true;
-            }
-        }).catch(error => {
-            console.error('Error processing budget details:', error);
+            })
+            .catch(error => {
+                console.error('Error processing budget details:', error);
         });
     });
 
