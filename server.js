@@ -568,12 +568,14 @@ app.get('/expensesData', (req, res) => {
 app.post('/analyzeFinancialData', (req, res) => {
 
     // Extract financial data from request body
-    const { aggregatedData } = req.body;
+    const {budgets, fromDate, toDate, aggregatedData} = req.body;
 
+    console.log(`Budget Data: ${JSON.stringify(budgets)}`);
+    console.log(`From Date: ${fromDate}, To Date: ${toDate}`);
     console.log(`Aggregated Data to be analyzed: ${JSON.stringify(aggregatedData)}`);
-
+    
     // Prepare data for the Python script
-    const inputData = JSON.stringify({aggregatedData});
+    const inputData = JSON.stringify({budgets, fromDate, toDate, aggregatedData});
 
     // Spawn a Python process and pass data via stdin
     const pythonProcess = spawn('python', ['analysis.py']);

@@ -1,93 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-    // Fetch current user's details
-    fetch('/getBudgetDetails')
-    .then(response => {
-        if (response.ok) {
-            return response.json();
-        } else {
-            throw new Error('Failed to fetch current credentials');
-        }
-    })
-    .then(data => {    
-        //console.log(data);
-        if (data.success && Array.isArray(data.budgets)) {
-            // Initialize a dictionary to hold budget values
-            const budgetDict = {};
-            
-            // Populate the dictionary with data from the budgets array
-            data.budgets.forEach(budget => {
-                budgetDict[budget.category] = budget.amount;
-            });
-            
-            // Populate the input fields with fetched data
-            document.getElementById('clothing-budget').value = budgetDict['Clothing'] || '';
-            document.getElementById('entertainment-budget').value = budgetDict['Entertainment'] || '';
-            document.getElementById('food-budget').value = budgetDict['Food'] || '';
-            document.getElementById('housing-budget').value = budgetDict['Housing'] || '';
-            document.getElementById('investment-budget').value = budgetDict['Investment'] || '';
-            document.getElementById('medical-budget').value = budgetDict['Medical'] || '';
-            document.getElementById('other-budget').value = budgetDict['Other'] || '';
-            document.getElementById('transportation-budget').value = budgetDict['Transportation'] || '';
-            document.getElementById('utilities-budget').value = budgetDict['Utilities'] || '';
-        } else {
-            console.error('Unexpected data format or failed request.');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
-
-    document.getElementById('save-budget-btn').addEventListener('click', function() {
-        const budgetDetails = {
-            'Clothing': document.getElementById('clothing-budget').value,
-            'Entertainment': document.getElementById('entertainment-budget').value,
-            'Food': document.getElementById('food-budget').value,
-            'Housing': document.getElementById('housing-budget').value,
-            'Investment': document.getElementById('investment-budget').value,
-            'Medical': document.getElementById('medical-budget').value,
-            'Other': document.getElementById('other-budget').value,
-            'Transportation': document.getElementById('transportation-budget').value,
-            'Utilities': document.getElementById('utilities-budget').value
-        };
-
-        // Create an array to hold the promises
-        const promises = [];
-
-        // Loop through the budgetDetails object and send each category's amount to the server
-        for (const [category, amount] of Object.entries(budgetDetails)) {
-                // Push each fetch request promise into the promises array
-                promises.push(
-                    // Send an AJAX POST request to the server
-                    fetch('/saveBudgetDetails', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ category, amount })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data.success) {
-                            throw new error(`Failed to save budget for ${category}: ${data.message}`);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error saving budget details:', error);
-                    })
-                );
-        }
-
-        // Use Promise.all to handle all fetch requests
-        Promise.all(promises)
-            .then(() => {
-                alert('Budget details saved successfully.');
-            })
-            .catch(error => {
-                console.error('Error processing budget details:', error);
-        });
-    });
-
     const dateForm = document.getElementById('date-form');
     const fromDateInput = document.getElementById('from-date');
     const toDateInput = document.getElementById('to-date');
@@ -149,19 +61,41 @@ async function fetchExpensesData(fromDate, toDate) {
 async function AnalyzeExpenses() {
     try {
         const aggregatedData = JSON.parse(document.getElementById('graph').dataset.aggregatedData || '[]');
+        const fromDate = document.getElementById('from-date').value;
+        const toDate = document.getElementById('to-date').value;
 
         if (aggregatedData.length === 0) {
             alert('No aggregated data available for analysis.');
             return;
         }
 
+        // Fetch budget details
+        const budgetResponse = await fetch('/getBudgetDetails');
+        if (!budgetResponse.ok) {
+            throw new Error('Failed to fetch budget details');
+        }
+        
+        const budgetData = await budgetResponse.json();
+        if (!budgetData.success || !Array.isArray(budgetData.budgets)) {
+            throw new Error('Invalid budget data format');
+        }
+
+        const budgetDetails = budgetData.budgets;
+
+        // Combine aggregatedData with budgetDetails
+        const analysisPayload = {
+            aggregatedData: aggregatedData,
+            budgets: budgetDetails,
+            fromDate: fromDate,  // Include fromDate
+            toDate: toDate 
+        };
+
         const response = await fetch('/analyzeFinancialData', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ aggregatedData: aggregatedData
-             })
+            body: JSON.stringify(analysisPayload)
         });
 
         if (!response.ok) {
@@ -207,7 +141,6 @@ function renderPieChart(rawData) {
         data: {
             labels: aggregatedData.map(expense => expense.category),
             datasets: [{
-                label: 'Total Spent',
                 data: aggregatedData.map(expense => expense.total_amount),
                 backgroundColor: getBackgroundColor(aggregatedData.length),
                 borderColor: getBorderColor(aggregatedData.length),
@@ -257,5 +190,5 @@ function getBorderColor(length) {
 function updateAnalysisResults(data) {
     const analysisResultsDiv = document.getElementById('analysis-results');
     analysisResultsDiv.textContent = data;
-    document.getElementById('analysis-section').style.display = 'block';
+    document.getElementById('analysis-container').style.display = 'block';
 }

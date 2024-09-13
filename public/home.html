@@ -17,7 +17,7 @@
       <nav class="header-menu">
         <ul>
           <li><a href='Expenses.html'>Expenses and History</a></li>
-          <li><a href='report-analysis.html'>Budget and Analysis</a></li>
+          <li><a href='report-analysis.html'>Report and Analysis</a></li>
           <li><a href='account-settings.html'>Account Settings</a></li>
         </ul>
       </nav>
@@ -28,6 +28,48 @@
     <section class="content-section">
       <div class="welcome-section">
         <h1>Hi There!<br> Welcome,  <span id="name"></span></h1>
+      </div>
+      <div class="budget-section">
+        <h1>Budget for Each Category</h1>
+            <form id="budget-form">
+                <div class="category-budget">
+                    <label for="housing-budget">Housing:</label>
+                    <input type="number" id="housing-budget" name="housing-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="food-budget">Food:</label>
+                    <input type="number" id="food-budget" name="food-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="entertainment-budget">Entertainment:</label>
+                    <input type="number" id="entertainment-budget" name="entertainment-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="transportation-budget">Transportation:</label>
+                    <input type="number" id="transportation-budget" name="transportation-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="utilities-budget">Utilities:</label>
+                    <input type="number" id="utilities-budget" name="utilities-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="investment-budget">Investment:</label>
+                    <input type="number" id="investment-budget" name="investment-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="clothing-budget">Clothing:</label>
+                    <input type="number" id="clothing-budget" name="clothing-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="medical-budget">Medical:</label>
+                    <input type="number" id="medical-budget" name="medical-budget" placeholder="Enter amount" min="0">
+                </div>
+                <div class="category-budget">
+                    <label for="other-budget">Other:</label>
+                    <input type="number" id="other-budget" name="other-budget" placeholder="Enter amount" min="0">
+                </div>
+                <button id="save-budget-btn" type="button">Save Budget</button>
+            </form>
       </div>
       <div class="chart-section">
         <canvas id="expenseChart" ></canvas>
