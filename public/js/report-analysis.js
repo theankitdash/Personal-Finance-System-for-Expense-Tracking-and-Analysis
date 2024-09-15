@@ -86,7 +86,7 @@ async function AnalyzeExpenses() {
         const analysisPayload = {
             aggregatedData: aggregatedData,
             budgets: budgetDetails,
-            fromDate: fromDate,  // Include fromDate
+            fromDate: fromDate,  
             toDate: toDate 
         };
 

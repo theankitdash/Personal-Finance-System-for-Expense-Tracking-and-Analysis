@@ -3,83 +3,106 @@ import json
 import pandas as pd
 from datetime import timedelta, datetime
 
-def analyze_financial_data(aggregated_data, budget_data):
+def analyze_financial_data(budget_data, from_date, to_date, aggregated_data):
     # Convert lists to DataFrames
     df_aggregated = pd.DataFrame(aggregated_data)
     df_budget = pd.DataFrame(budget_data)
 
     # Aggregate Data Analysis
-    try:
-        df_aggregated['date'] = pd.to_datetime(df_aggregated['date']) + timedelta(days=1)
-        df_aggregated['month'] = df_aggregated['date'].dt.strftime('%b-%Y')
-        df_aggregated = df_aggregated[['date', 'month', 'category', 'amount', 'description']]
+    df_aggregated['date'] = pd.to_datetime(df_aggregated['date']) + timedelta(days=1)
+    df_aggregated['month'] = df_aggregated['date'].dt.strftime('%b-%Y')
+    df_aggregated = df_aggregated[['date', 'month', 'category', 'amount', 'description']]
 
-        # Summarize by month and category
+    # Filter data within the date range
+    df_aggregated = df_aggregated[(df_aggregated['date'] >= from_date) & (df_aggregated['date'] <= to_date)]
+
+    # Summarize by month and category
+    try:
         month_category_data = df_aggregated.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0) 
     except KeyError as e:
         print(f"Missing column in aggregated data: {e}", file=sys.stderr)
         month_category_data = pd.DataFrame()
-        
+
     # Generate report lines
     report_lines = []
+    report_lines.append(f"Report from {from_date} to {to_date}")
     report_lines.append(" ")
+
+    month_wise_spending = {}
+    budget_left_per_category = {}
+    total_spending = 0
+    total_budget_current_month = 0
+    current_month = datetime.now().strftime('%b-%Y')
     
     # Include the data categorized by month    
     if not month_category_data.empty:
-        current_month = datetime.now().strftime('%b-%Y')
-
         for month, categories in month_category_data.iterrows():
             report_lines.append(f"Month: {month}")
             total_spent_in_month = categories.sum()
+            month_wise_spending[month] = total_spent_in_month
 
             for category, amount in categories.items():
                 budget_amount = df_budget.loc[df_budget['category'] == category, 'amount'].values
                 budget_amount = budget_amount[0] if len(budget_amount) > 0 else None
                 
-                if budget_amount is not None:
+                if budget_amount is not None and pd.notnull(budget_amount):
                     if amount > budget_amount:
                         status = f"Over Budget by INR {amount - budget_amount:.2f}"
                     else:
                         remaining_budget = budget_amount - amount
                         percent_left = (remaining_budget / budget_amount) * 100
                         status = f"Within Budget (Spent INR {amount:.2f} of INR {budget_amount:.2f})"
+                        if month == current_month:
+                            total_budget_current_month += budget_amount
                 else:
                     status = f"No budget set for this category. Spent INR {amount:.2f}"
-                
+                    remaining_budget = None
+
+                budget_left_per_category[category] = remaining_budget
                 report_lines.append(f"  Category: {category}, {status}")
 
-            # If it's the current month, add extra information
-            if month == current_month:
-                total_budget_current_month = df_budget['amount'].sum()
-                remaining_budget_current_month = total_budget_current_month - total_spent_in_month
-                percent_left_current_month = (remaining_budget_current_month / total_budget_current_month) * 100
-                report_lines.append(f"  Total Budget for {month}: INR {total_budget_current_month:.2f}")
-                report_lines.append(f"  Total Spent: INR {total_spent_in_month:.2f}")
-                report_lines.append(f"  {percent_left_current_month:.2f}% of the total budget is left for the month.")
-            
             # Add the total spent in the month
             report_lines.append(f"Total Amount Spent in {month}: INR {total_spent_in_month:.2f}")
             report_lines.append("")  # Blank line for separation
 
-        # Calculate the total amount spent
-        total_amount_dt = month_category_data.sum().sum()
-        report_lines.append(f"Total Amount Spent: INR {total_amount_dt:.2f}")
+        # Calculate the total amount spent across all months within the range
+        total_spending = month_category_data.sum().sum()
+        report_lines.append(f"Total Amount Spent from {from_date} to {to_date}: INR {total_spending:.2f}")
+
+        # Calculate the total spending for the current month
+        total_spent_current_month = month_category_data.loc[current_month].sum() if current_month in month_category_data.index else 0
+        
+        # Report the percentage of budget left for the current month
+        if total_budget_current_month > 0:
+            percent_budget_left = total_budget_current_month - total_spent_current_month
+            report_lines.append(f"Percentage of Budget Left for Current Month ({current_month}): {percent_budget_left:.2f}")
+        else:
+            report_lines.append(f"No budget information available for the current month ({current_month}).")
+
     else:
-        report_lines.append("No financial data available for the given period.")        
-    
-    return "\n".join(report_lines), month_category_data
+        report_lines.append("No financial data available for the given period.")
+
+    return report_lines    
     
 
 def main():
     try:
         input_data = json.load(sys.stdin)
         
-        aggregated_data = input_data.get('aggregatedData', [])
         budget_data = input_data.get('budgets', [])
-
-        # Analyze financial data
-        report,_ = analyze_financial_data(aggregated_data, budget_data)
-        print(report)  # Print the report lines
+        from_date = input_data.get('fromDate', '')
+        to_date = input_data.get('toDate', '')
+        aggregated_data = input_data.get('aggregatedData', [])
+    
+        # Perform financial data analysis
+        report_lines = analyze_financial_data(budget_data, from_date, to_date, aggregated_data)
+        
+        # Print the report
+        if report_lines:
+            for line in report_lines:
+                print(line)
+        else:
+            print("No report generated.")    
         
     except json.JSONDecodeError:
         print("Invalid JSON data provided.", file=sys.stderr)
