@@ -3,91 +3,96 @@ import json
 import pandas as pd
 from datetime import timedelta, datetime
 
-def analyze_financial_data(budget_data, from_date, to_date, aggregated_data):
-    # Convert lists to DataFrames
+# Function to convert and prepare data for analysis
+def prepare_data(aggregated_data, budget_data):
     df_aggregated = pd.DataFrame(aggregated_data)
     df_budget = pd.DataFrame(budget_data)
-
-    # Aggregate Data Analysis
+    
+    # Process date column and create month column
     df_aggregated['date'] = pd.to_datetime(df_aggregated['date']) + timedelta(days=1)
     df_aggregated['month'] = df_aggregated['date'].dt.strftime('%b-%Y')
-    df_aggregated = df_aggregated[['date', 'month', 'category', 'amount', 'description']]
+    
+    return df_aggregated, df_budget
 
-    # Filter data within the date range
-    df_aggregated = df_aggregated[(df_aggregated['date'] >= from_date) & (df_aggregated['date'] <= to_date)]
+# Function to filter data by date range
+def filter_by_date(df_aggregated, from_date, to_date):
+    return df_aggregated[(df_aggregated['date'] >= from_date) & (df_aggregated['date'] <= to_date)]
 
-    # Summarize by month and category
+# Function to group data by month and category
+def group_by_month_category(df_aggregated):
     try:
-        month_category_data = df_aggregated.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0) 
+        month_category_data = df_aggregated.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0)
     except KeyError as e:
         print(f"Missing column in aggregated data: {e}", file=sys.stderr)
         month_category_data = pd.DataFrame()
+    
+    return month_category_data
 
-    # Generate report lines
+# Function to generate report for a single month
+def generate_month_report(month, categories, df_budget, report_lines):
+    total_spent_in_month = categories.sum()
+    report_lines.append(f"Month: {month}")
+    
+    for category, amount in categories.items():
+        budget_amount = df_budget.loc[df_budget['category'] == category, 'amount'].values
+        budget_amount = budget_amount[0] if len(budget_amount) > 0 else None
+
+        if budget_amount is not None and pd.notnull(budget_amount):
+            if amount > budget_amount:
+                over_budget = amount - budget_amount
+                status = f"Over Budget by INR {over_budget:.2f} (Spent INR {amount:.2f} of INR {budget_amount:.2f}"
+            else:
+                status = f"Within Budget (Spent INR {amount:.2f} of INR {budget_amount:.2f})"
+        else:
+            status = f"No budget set for this category. Spent INR {amount:.2f}"
+        
+        report_lines.append(f"  Category: {category}, {status}")
+
+    report_lines.append(f"Total Amount Spent in {month}: INR {total_spent_in_month:.2f}")
+    report_lines.append("")  # Blank line for separation
+
+# Function to generate the full financial report
+def generate_report(df_budget, month_category_data, from_date, to_date):
     report_lines = []
     report_lines.append(f"Report from {from_date} to {to_date}")
     report_lines.append(" ")
-
+    
     month_wise_spending = {}
     total_spending = 0
-    total_budget_current_month = 0
-    total_spent_current_month = 0
-    current_month = datetime.now().strftime('%b-%Y')
-
-    # Calculate total budget for the current month by summing the budget for all categories
     total_budget_current_month = df_budget['amount'].sum()
-    
-    # Include the data categorized by month    
+    current_month = datetime.now().strftime('%b-%Y')
+    total_spent_current_month = 0
+
+    # Generate report for each month
     if not month_category_data.empty:
         for month, categories in month_category_data.iterrows():
-            report_lines.append(f"Month: {month}")
-            total_spent_in_month = categories.sum()
-            month_wise_spending[month] = total_spent_in_month
+            generate_month_report(month, categories, df_budget, report_lines)
+            month_wise_spending[month] = categories.sum()
 
-            for category, amount in categories.items():
-                budget_amount = df_budget.loc[df_budget['category'] == category, 'amount'].values
-                budget_amount = budget_amount[0] if len(budget_amount) > 0 else None
-                
-                if budget_amount is not None and pd.notnull(budget_amount):
-                    if amount > budget_amount:
-                        status = f"Over Budget by INR {amount - budget_amount:.2f}"
-                    else:
-                        remaining_budget = budget_amount - amount
-                        status = f"Within Budget (Spent INR {amount:.2f} of INR {budget_amount:.2f})"
-                else:
-                    status = f"No budget set for this category. Spent INR {amount:.2f}"
-                    remaining_budget = None
-
-                report_lines.append(f"  Category: {category}, {status}")
-
-            # Add the total spent in the month
-            report_lines.append(f"Total Amount Spent in {month}: INR {total_spent_in_month:.2f}")
-            report_lines.append("")  # Blank line for separation
-
-        # Calculate the total spending for the current month
-        total_spent_current_month = month_category_data.loc[current_month].sum() if current_month in month_category_data.index else 0
-
-        # Report the amount of budget left for the current month
-        amount_budget_left = total_budget_current_month - total_spent_current_month
-        
-        # Report the percentage of budget left for the current month
-        if total_budget_current_month > 0:
+        # Only show current month budget if the current month is in the filtered data range
+        if current_month in month_category_data.index:
+            total_spent_current_month = month_category_data.loc[current_month].sum()
+            amount_budget_left = total_budget_current_month - total_spent_current_month
+            
             report_lines.append(f"Total Budget for Current Month: INR {total_budget_current_month:.2f}")
             report_lines.append(f"Total Amount Spent in Current Month: INR {total_spent_current_month:.2f}")
             report_lines.append(f"Amount of Budget Left for Current Month ({current_month}): INR {amount_budget_left:.2f}")
-        else:
-            report_lines.append(f"No budget information available for the current month ({current_month}).")
-
-        report_lines.append("") 
+            report_lines.append("")  # Blank line for separation
         
-        # Calculate the total amount spent across all months within the range
         total_spending = month_category_data.sum().sum()
-        report_lines.append(f"Total Amount Spent from {from_date} to {to_date}: INR {total_spending:.2f}")    
+        report_lines.append(f"Total Amount Spent from {from_date} to {to_date}: INR {total_spending:.2f}")
     else:
         report_lines.append("No financial data available for the given period.")
-
-    return report_lines    
     
+    return report_lines
+
+# Main function to orchestrate the analysis
+def analyze_financial_data(budget_data, from_date, to_date, aggregated_data):
+    df_aggregated, df_budget = prepare_data(aggregated_data, budget_data)
+    df_aggregated = filter_by_date(df_aggregated, from_date, to_date)
+    month_category_data = group_by_month_category(df_aggregated)
+    
+    return generate_report(df_budget, month_category_data, from_date, to_date)       
 
 def main():
     try:
