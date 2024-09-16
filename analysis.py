@@ -29,10 +29,13 @@ def analyze_financial_data(budget_data, from_date, to_date, aggregated_data):
     report_lines.append(" ")
 
     month_wise_spending = {}
-    budget_left_per_category = {}
     total_spending = 0
     total_budget_current_month = 0
+    total_spent_current_month = 0
     current_month = datetime.now().strftime('%b-%Y')
+
+    # Calculate total budget for the current month by summing the budget for all categories
+    total_budget_current_month = df_budget['amount'].sum()
     
     # Include the data categorized by month    
     if not month_category_data.empty:
@@ -50,35 +53,36 @@ def analyze_financial_data(budget_data, from_date, to_date, aggregated_data):
                         status = f"Over Budget by INR {amount - budget_amount:.2f}"
                     else:
                         remaining_budget = budget_amount - amount
-                        percent_left = (remaining_budget / budget_amount) * 100
                         status = f"Within Budget (Spent INR {amount:.2f} of INR {budget_amount:.2f})"
-                        if month == current_month:
-                            total_budget_current_month += budget_amount
                 else:
                     status = f"No budget set for this category. Spent INR {amount:.2f}"
                     remaining_budget = None
 
-                budget_left_per_category[category] = remaining_budget
                 report_lines.append(f"  Category: {category}, {status}")
 
             # Add the total spent in the month
             report_lines.append(f"Total Amount Spent in {month}: INR {total_spent_in_month:.2f}")
             report_lines.append("")  # Blank line for separation
 
-        # Calculate the total amount spent across all months within the range
-        total_spending = month_category_data.sum().sum()
-        report_lines.append(f"Total Amount Spent from {from_date} to {to_date}: INR {total_spending:.2f}")
-
         # Calculate the total spending for the current month
         total_spent_current_month = month_category_data.loc[current_month].sum() if current_month in month_category_data.index else 0
+
+        # Report the amount of budget left for the current month
+        amount_budget_left = total_budget_current_month - total_spent_current_month
         
         # Report the percentage of budget left for the current month
         if total_budget_current_month > 0:
-            percent_budget_left = total_budget_current_month - total_spent_current_month
-            report_lines.append(f"Percentage of Budget Left for Current Month ({current_month}): {percent_budget_left:.2f}")
+            report_lines.append(f"Total Budget for Current Month: INR {total_budget_current_month:.2f}")
+            report_lines.append(f"Total Amount Spent in Current Month: INR {total_spent_current_month:.2f}")
+            report_lines.append(f"Amount of Budget Left for Current Month ({current_month}): INR {amount_budget_left:.2f}")
         else:
             report_lines.append(f"No budget information available for the current month ({current_month}).")
 
+        report_lines.append("") 
+        
+        # Calculate the total amount spent across all months within the range
+        total_spending = month_category_data.sum().sum()
+        report_lines.append(f"Total Amount Spent from {from_date} to {to_date}: INR {total_spending:.2f}")    
     else:
         report_lines.append("No financial data available for the given period.")
 
