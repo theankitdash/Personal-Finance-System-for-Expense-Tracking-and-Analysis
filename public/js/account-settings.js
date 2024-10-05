@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while fetching current credentials');
+            alert("Personal details not found. Please add to continue further!");
         });
 
     // Function to format date as YYYY-MM-DD

@@ -1,16 +1,13 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // Fetch all expenses history
-    function fetchAllExpenses() {
-        fetch('/expensesHistory?filter=all&value=')
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
+    async function fetchAllExpenses() {
+        try {
+            const response = await fetch('/expensesHistory?filter=all&value=');
+            if (!response.ok) {
                 throw new Error('Failed to fetch expenses history');
             }
-        })
-        .then(expenses => {
+            const expenses = await response.json();
             const expensesTableBody = document.getElementById('expensesTableBody');
             expensesTableBody.innerHTML = '';
 
@@ -19,22 +16,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 const row = createExpenseRow(expense, formattedDate);
                 expensesTableBody.appendChild(row);
             });
-        })
-        .catch(error => {
+        } catch (error) {
             handleFetchError(error, 'Error fetching expenses history');
-        });
+        }
     }
 
     // Fetch unique options for a given filter type
-    function fetchUniqueOptions(filterType) {
-        return fetch(`/uniqueOptions?filter=${filterType}`)
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    throw new Error('Failed to fetch unique options');
-                }
-            });
+    async function fetchUniqueOptions(filterType) {
+        try {
+            const response = await fetch(`/uniqueOptions?filter=${filterType}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch unique options');
+            }
+            return await response.json();
+        } catch (error) {
+            handleFetchError(error, 'Error fetching unique options');
+        }
     }
     
     // Function to fetch categories
@@ -175,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Update expenses history based on selected filter
-    function updateExpensesHistory() {
+    async function updateExpensesHistory() {
         const filterType = document.getElementById('selectFilter').value;
         const selectOption = document.getElementById('selectOption').value;
         const dateInput = document.getElementById('dateInput').value;
@@ -186,15 +183,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const url = `/expensesHistory?${params.toString()}`;
 
-        fetch(url)
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
                 throw new Error('Failed to fetch expenses history');
             }
-        })
-        .then(expenses => {
+            const expenses = await response.json();
             const expensesTableBody = document.getElementById('expensesTableBody');
             expensesTableBody.innerHTML = '';
 
@@ -210,10 +204,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const row = createExpenseRow(expense, formattedDate);
                 expensesTableBody.appendChild(row);
             });
-        })
-        .catch(error => {
+        } catch (error) {
             handleFetchError(error, 'Error fetching expenses history');
-        });
+        }
     }
 
     // Create table row for each expense
