@@ -1,15 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-
-    // Fetch current expenses history
-    fetch('/expensesHistory')
-    .then(response => {
-        if (!response.ok) {
-        throw new Error('Failed to fetch current Expenses');
-        }
-        return response.json();
-    })
-
     // Fetch all expenses history
     function fetchAllExpenses() {
         fetch('/expensesHistory?filter=all&value=')
@@ -33,6 +23,18 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             handleFetchError(error, 'Error fetching expenses history');
         });
+    }
+
+    // Fetch unique options for a given filter type
+    function fetchUniqueOptions(filterType) {
+        return fetch(`/uniqueOptions?filter=${filterType}`)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Failed to fetch unique options');
+                }
+            });
     }
     
     // Function to fetch categories
@@ -136,19 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
             handleFetchError(error, `Error ${expenseId ? 'updating' : 'saving'} expense`);
         });
     }
-
-    // Fetch unique options for a given filter type
-    function fetchUniqueOptions(filterType) {
-        return fetch(`/uniqueOptions?filter=${filterType}`)
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    throw new Error('Failed to fetch unique options');
-                }
-            });
-    }
-
+ 
     // Update filter options
     function updateFilterOptions() {
         const filterType = document.getElementById('selectFilter').value;
