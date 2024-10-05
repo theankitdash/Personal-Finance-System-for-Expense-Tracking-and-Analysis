@@ -1,6 +1,31 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-    // Function to fetch categories from the backend
+    // Fetch all expenses history
+    function fetchAllExpenses() {
+        fetch('/expensesHistory?filter=all&value=')
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to fetch expenses history');
+            }
+        })
+        .then(expenses => {
+            const expensesTableBody = document.getElementById('expensesTableBody');
+            expensesTableBody.innerHTML = '';
+
+            expenses.forEach(expense => {
+                const formattedDate = formatDate(expense.date);
+                const row = createExpenseRow(expense, formattedDate);
+                expensesTableBody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            handleFetchError(error, 'Error fetching expenses history');
+        });
+    }
+    
+    // Function to fetch categories
     async function fetchCategories() {
         try {
             const response = await fetch('/categories');
@@ -99,31 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             handleFetchError(error, `Error ${expenseId ? 'updating' : 'saving'} expense`);
-        });
-    }
-
-    // Fetch all expenses history
-    function fetchAllExpenses() {
-        fetch('/expensesHistory?filter=all&value=')
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                throw new Error('Failed to fetch expenses history');
-            }
-        })
-        .then(expenses => {
-            const expensesTableBody = document.getElementById('expensesTableBody');
-            expensesTableBody.innerHTML = '';
-
-            expenses.forEach(expense => {
-                const formattedDate = formatDate(expense.date);
-                const row = createExpenseRow(expense, formattedDate);
-                expensesTableBody.appendChild(row);
-            });
-        })
-        .catch(error => {
-            handleFetchError(error, 'Error fetching expenses history');
         });
     }
 
