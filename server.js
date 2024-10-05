@@ -281,34 +281,6 @@ app.get('/currentMonthExpenses', (req, res) => {
     });
 });
 
-// Endpoint to retrieve distinct expense categories
-app.get('/categories', (req, res) => {
-    // Check if the user is logged in
-    if (!req.session.phone) {
-        return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-
-    // Fetch distinct categories for the logged-in user
-    const phone = req.session.phone;
-
-    // SQL query to fetch distinct categories for the user
-    const query = `
-        SELECT DISTINCT category
-        FROM budget
-        WHERE phone = ?
-    `;
-
-    db.query(query, phone, (err, results) => {
-        if (err) {
-            console.error('Error retrieving categories:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-
-        // Extract the categories and return them
-        const categories = results.map(row => row.category);
-        res.json({ success: true, categories });
-    });
-});
 
 // Endpoint to retrieve expenses history for the current user
 app.get('/expensesHistory', (req, res) => {
@@ -382,6 +354,35 @@ app.get('/uniqueOptions', (req, res) => {
 
         const uniqueOptions = results.map(result => result.uniqueOption);
         res.json(uniqueOptions);
+    });
+});
+
+// Endpoint to retrieve distinct expense categories
+app.get('/categories', (req, res) => {
+    // Check if the user is logged in
+    if (!req.session.phone) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Fetch distinct categories for the logged-in user
+    const phone = req.session.phone;
+
+    // SQL query to fetch distinct categories for the user
+    const query = `
+        SELECT DISTINCT category
+        FROM budget
+        WHERE phone = ?
+    `;
+
+    db.query(query, phone, (err, results) => {
+        if (err) {
+            console.error('Error retrieving categories:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+
+        // Extract the categories and return them
+        const categories = results.map(row => row.category);
+        res.json({ success: true, categories });
     });
 });
 
