@@ -1,5 +1,15 @@
 document.addEventListener('DOMContentLoaded', function() {
 
+
+    // Fetch current expenses history
+    fetch('/expensesHistory')
+    .then(response => {
+        if (!response.ok) {
+        throw new Error('Failed to fetch current Expenses');
+        }
+        return response.json();
+    })
+
     // Fetch all expenses history
     function fetchAllExpenses() {
         fetch('/expensesHistory?filter=all&value=')

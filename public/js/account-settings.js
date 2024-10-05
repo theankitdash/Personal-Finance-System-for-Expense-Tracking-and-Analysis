@@ -100,12 +100,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listener to the logout button
     const urls = {
-        production: 'https://the-finance-tracker.azurewebsites.net',
+        production: 'https://the-financial-tracker.azurewebsites.net',
         development: 'http://localhost:3000'
     };
 
     // Determine the environment
-    const isProduction = window.location.hostname === 'the-finance-tracker.azurewebsites.net';
+    const isProduction = window.location.hostname === 'the-financial-tracker.azurewebsites.net';
     const loginUrl = isProduction ? urls.production : urls.development;
     
     const logoutBtn = document.getElementById('logoutBtn');
