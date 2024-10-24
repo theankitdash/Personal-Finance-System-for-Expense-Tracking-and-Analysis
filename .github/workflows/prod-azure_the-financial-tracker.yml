@@ -59,4 +59,4 @@ jobs:
           app-name: 'the-financial-tracker'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_80B9AF914DDF41208F813B9ADB4ABCA5 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8B5B4A20C715441A941F999925667F6D }}
