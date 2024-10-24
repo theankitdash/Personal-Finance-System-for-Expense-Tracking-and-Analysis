@@ -85,8 +85,7 @@ db.connect((err) => {
                 amount DECIMAL(10, 2) NOT NULL,
                 description VARCHAR(200) NOT NULL,
                 category VARCHAR(100) NOT NULL,
-                FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE,
-                FOREIGN KEY (category) REFERENCES budget(category) ON DELETE CASCADE ON UPDATE CASCADE
+                FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
             )
         `, (err) => {
             if (err) {
