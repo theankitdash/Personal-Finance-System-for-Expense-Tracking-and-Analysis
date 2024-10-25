@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"  # Map port 3000 of the container to port 3000 of the host
+    environment:
+      MYSQL_HOST: host.docker.internal  # Use host.docker.internal to connect to the local MySQL
+      MYSQL_USER: root  # Your MySQL username
+      MYSQL_PASSWORD: Chiku@4009  # Your MySQL password
+      MYSQL_DATABASE: finance-tracker  # Your MySQL database name
+      MYSQL_PORT: 3306  # Default MySQL port
+    
+
+  # Uncomment the following block if you want to run MySQL in a container
+  # mysql:
+  #   image: mysql:8.0
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: Chiku@4009  # Set MySQL root password
+  #     MYSQL_DATABASE: finance-tracker  # Create a database
+  #   ports:
+  #     - "3306:3306"  # Expose MySQL port to the host
+  #   volumes:
+  #     - mysql-data:/var/lib/mysql  # Persist MySQL data
+
