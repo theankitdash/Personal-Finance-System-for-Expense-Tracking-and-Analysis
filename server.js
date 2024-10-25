@@ -565,12 +565,11 @@ app.get('/expensesData', (req, res) => {
 
 // Route to perform financial analysis
 app.post('/analyzeFinancialData', (req, res) => {
-
     // Extract financial data from request body
-    const {budgets, fromDate, toDate, aggregatedData} = req.body;
-    
+    const { budgets, fromDate, toDate, aggregatedData } = req.body;
+
     // Prepare data for the Python script
-    const inputData = JSON.stringify({budgets, fromDate, toDate, aggregatedData});
+    const inputData = JSON.stringify({ budgets, fromDate, toDate, aggregatedData });
     console.log('Input Data to Python:', inputData);
 
     // Spawn a Python process and pass data via stdin
@@ -597,15 +596,23 @@ app.post('/analyzeFinancialData', (req, res) => {
     pythonProcess.on('close', (code) => {
         if (code !== 0) {
             console.error('Python process exited with error code:', code);
-            res.status(500).json({ error: 'Internal Server Error', details: errorOutput });
+            // Ensure only one response is sent
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Internal Server Error', details: errorOutput });
+            }
         } else {
             try {
                 // Send the result back to the client as plain text
-                res.set('Content-Type', 'text/plain');
-                res.send(analysisResult);
+                if (!res.headersSent) {
+                    res.set('Content-Type', 'text/plain');
+                    res.send(analysisResult);
+                }
             } catch (error) {
                 console.error('Error parsing JSON:', error);
-                res.status(500).json({ error: 'Internal Server Error' });
+                // Ensure only one response is sent
+                if (!res.headersSent) {
+                    res.status(500).json({ error: 'Internal Server Error' });
+                }
             }
         }
     });
@@ -613,7 +620,10 @@ app.post('/analyzeFinancialData', (req, res) => {
     // Handle any errors from the Python process
     pythonProcess.on('error', (error) => {
         console.error('Python process error:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        // Ensure only one response is sent
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
     });
 });
     
