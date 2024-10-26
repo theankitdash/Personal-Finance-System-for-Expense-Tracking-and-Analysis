@@ -12,15 +12,3 @@ services:
       MYSQL_DATABASE: finance-tracker  # Your MySQL database name
       MYSQL_PORT: 3306  # Default MySQL port
     
-
-  # Uncomment the following block if you want to run MySQL in a container
-  # mysql:
-  #   image: mysql:8.0
-  #   environment:
-  #     MYSQL_ROOT_PASSWORD: Chiku@4009  # Set MySQL root password
-  #     MYSQL_DATABASE: finance-tracker  # Create a database
-  #   ports:
-  #     - "3306:3306"  # Expose MySQL port to the host
-  #   volumes:
-  #     - mysql-data:/var/lib/mysql  # Persist MySQL data
-
