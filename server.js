@@ -22,9 +22,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // MySQL database setup
 const db = mysql.createConnection({
     host: process.env.AZURE_MYSQL_HOST || process.env.MYSQL_HOST,
-    user: process.env.AZURE_MYSQL_USER || process.env.MYSQL_USER,
-    password: process.env.AZURE_MYSQL_PASSWORD || process.env.MYSQL_PASSWORD,
-    database: process.env.AZURE_MYSQL_DATABASE || process.env.MYSQL_DATABASE,
+    user: process.env.AZURE_MYSQL_USER || process.env.MYSQL_USER || 'root',
+    password: process.env.AZURE_MYSQL_PASSWORD || process.env.MYSQL_PASSWORD || 'Chiku@4009',
+    database: process.env.AZURE_MYSQL_DATABASE || process.env.MYSQL_DATABASE  || 'finance-tracker',
     port: process.env.AZURE_MYSQL_PORT || process.env.MYSQL_PORT,
     ssl: process.env.AZURE_MYSQL_SSL ? JSON.parse(process.env.AZURE_MYSQL_SSL) : false
 });
