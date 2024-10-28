@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finance-tracker-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: finance-tracker
+  template:
+    metadata:
+      labels:
+        app: finance-tracker
+    spec:
+      containers:
+      - name: finance-tracker
+        image: theankitdash/finance-tracker:latest  # Use your registry image
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MYSQL_HOST
+          value: "host.docker.internal"  # Use host.docker.internal to connect to local MySQL
+        - name: MYSQL_USER
+          value: "root"  # Your MySQL username
+        - name: MYSQL_PASSWORD
+          value: "Chiku@4009"  # Your MySQL password
+        - name: MYSQL_DATABASE
+          value: "finance-tracker"  # Your MySQL database name
+        - name: MYSQL_PORT
+          value: "3306"  # Default MySQL port
+        resources:
+          requests:
+            memory: "256Mi"  # Minimum memory required
+            cpu: "250m"      # Minimum CPU required
+          limits:
+            memory: "512Mi"  # Maximum memory allowed
+            cpu: "500m"      # Maximum CPU allowed
