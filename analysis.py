@@ -2,6 +2,7 @@ import sys
 import json
 import pandas as pd
 from datetime import timedelta, datetime
+from sklearn.ensemble import IsolationForest
 
 # Function to convert and prepare data for analysis
 def prepare_data(aggregated_data, budget_data):
@@ -28,6 +29,36 @@ def group_by_month_category(df_aggregated):
     
     return month_category_data
 
+# ML-based anomaly detection using Isolation Forest
+def detect_anomalies_isolation_forest(df_aggregated):
+    anomalies = []
+
+    # Prepare data: group by month & category
+    df_grouped = df_aggregated.groupby(['month', 'category'])['amount'].sum().reset_index()
+
+    # Encode categorical columns
+    df_grouped['month_num'] = pd.factorize(df_grouped['month'])[0]
+    df_grouped['category_num'] = pd.factorize(df_grouped['category'])[0]
+
+    # Feature set for model
+    X = df_grouped[['month_num', 'category_num', 'amount']]
+
+    # Apply Isolation Forest
+    iso = IsolationForest(n_estimators=200, contamination=0.1, max_samples='auto', random_state=42)
+    df_grouped['anomaly'] = iso.fit_predict(X)
+
+    # Filter anomalies
+    anomalies_df = df_grouped[df_grouped['anomaly'] == -1]
+
+    for _, row in anomalies_df.iterrows():
+        anomalies.append({
+            'month': row['month'],
+            'category': row['category'],
+            'amount': row['amount']
+        })
+
+    return anomalies
+
 # Function to generate report for a single month
 def generate_month_report(month, categories, df_budget, report_lines):
     total_spent_in_month = categories.sum()
@@ -52,7 +83,7 @@ def generate_month_report(month, categories, df_budget, report_lines):
     report_lines.append("")  # Blank line for separation
 
 # Function to generate the full financial report
-def generate_report(df_budget, month_category_data, from_date, to_date):
+def generate_report(df_budget, month_category_data, from_date, to_date, df_aggregated):
     report_lines = []
     report_lines.append(f"Report from {from_date} to {to_date}")
     report_lines.append(" ")
@@ -81,6 +112,18 @@ def generate_report(df_budget, month_category_data, from_date, to_date):
         
         total_spending = month_category_data.sum().sum()
         report_lines.append(f"Total Amount Spent from {from_date} to {to_date}: INR {total_spending:.2f}")
+        report_lines.append("")
+
+        # ML-based anomaly detection
+        ml_anomalies = detect_anomalies_isolation_forest(df_aggregated)
+
+        if ml_anomalies:
+            report_lines.append("ML-based Anomaly Detection:")
+            for item in ml_anomalies:
+                report_lines.append(
+                    f"  • {item['month']} - Category: {item['category']} had unusual spending of INR {item['amount']:.2f}"
+                )
+            report_lines.append("")    
     else:
         report_lines.append("No financial data available for the given period.")
     
@@ -92,7 +135,7 @@ def analyze_financial_data(budget_data, from_date, to_date, aggregated_data):
     df_aggregated = filter_by_date(df_aggregated, from_date, to_date)
     month_category_data = group_by_month_category(df_aggregated)
     
-    return generate_report(df_budget, month_category_data, from_date, to_date)       
+    return generate_report(df_budget, month_category_data, from_date, to_date, df_aggregated)       
 
 def main():
     try:
