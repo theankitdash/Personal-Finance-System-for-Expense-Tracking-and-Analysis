@@ -1,12 +1,30 @@
 services:
   app:
     build: .
+    image: theankitdash/finance-tracker:latest
+    container_name: finance-tracker
     ports:
-      - "3000:3000"  # Map port 3000 of the container to port 3000 of the host
+      - "3000:3000"
     environment:
-      MYSQL_HOST: host.docker.internal  # Use host.docker.internal to connect to the local MySQL
-      MYSQL_USER: root  # Your MySQL username
-      MYSQL_PASSWORD: Chiku@4009  # Your MySQL password
-      MYSQL_DATABASE: finance-tracker  # Your MySQL database name
-      MYSQL_PORT: 3306  # Default MySQL port
-    
+      MYSQL_HOST: ${MYSQL_HOST:-db}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_PORT: ${MYSQL_PORT}
+      MYSQL_SSL: ${MYSQL_SSL}
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql    
+
+volumes:
+  db_data:

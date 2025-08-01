@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+require('dotenv').config();
 const mysql = require('mysql');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
@@ -21,12 +22,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // MySQL database setup
 const db = mysql.createConnection({
-    host: process.env.AZURE_MYSQL_HOST || process.env.MYSQL_HOST,
-    user: process.env.AZURE_MYSQL_USER || process.env.MYSQL_USER || 'root',
-    password: process.env.AZURE_MYSQL_PASSWORD || process.env.MYSQL_PASSWORD || 'Chiku@4009',
-    database: process.env.AZURE_MYSQL_DATABASE || process.env.MYSQL_DATABASE  || 'finance-tracker',
-    port: process.env.AZURE_MYSQL_PORT || process.env.MYSQL_PORT,
-    ssl: process.env.AZURE_MYSQL_SSL ? JSON.parse(process.env.AZURE_MYSQL_SSL) : false
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+    port: process.env.MYSQL_PORT,
+    ssl: process.env.MYSQL_SSL === 'true' ? { rejectUnauthorized: true } : false
 });
 
 db.connect((err) => {
