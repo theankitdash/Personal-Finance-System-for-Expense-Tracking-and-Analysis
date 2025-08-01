@@ -13,7 +13,6 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_PORT: ${MYSQL_PORT}
-      MYSQL_SSL: ${MYSQL_SSL}
     volumes:
       - .:/usr/src/app
     restart: unless-stopped  

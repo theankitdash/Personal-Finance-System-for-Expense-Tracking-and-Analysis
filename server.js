@@ -22,12 +22,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // MySQL database setup
 const db = mysql.createConnection({
-    host: process.env.MYSQL_HOST || localhost,
+    host: process.env.MYSQL_HOST,
     user: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
     database: process.env.MYSQL_DATABASE,
-    port: process.env.MYSQL_PORT,
-    ssl: process.env.MYSQL_SSL === 'true' ? { rejectUnauthorized: true } : false
+    port: process.env.MYSQL_PORT
 });
 
 db.connect((err) => {
