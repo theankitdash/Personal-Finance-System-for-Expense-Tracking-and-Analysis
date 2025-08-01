@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 require('dotenv').config();
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const { spawn } = require('child_process');
@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // MySQL database setup
 const db = mysql.createConnection({
-    host: process.env.MYSQL_HOST,
+    host: process.env.MYSQL_HOST || localhost,
     user: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
     database: process.env.MYSQL_DATABASE,
