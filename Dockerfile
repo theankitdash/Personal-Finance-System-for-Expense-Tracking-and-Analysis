@@ -25,11 +25,15 @@ RUN /usr/src/app/venv/bin/pip install --no-cache-dir -r requirements.txt
 # Update PATH to prioritize the virtual environment
 ENV PATH="/usr/src/app/venv/bin:$PATH"
 
+# Copy wait-for-it and make executable
+COPY wait-for-it.sh /usr/src/app/wait-for-it.sh
+RUN chmod +x /usr/src/app/wait-for-it.sh
+
 # Copy the rest of the application code into the container
 COPY . .
 
 # Expose port 3000 to the outside world
 EXPOSE 3000
 
-# Command to run the app (start Node.js server)
-CMD ["node", "server.js"]
+# Start app only after MySQL is ready
+CMD ["./wait-for-it.sh", "mysql:3306", "--", "node", "server.js"]
