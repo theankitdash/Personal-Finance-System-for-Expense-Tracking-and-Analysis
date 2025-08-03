@@ -573,7 +573,8 @@ app.post('/analyzeFinancialData', (req, res) => {
     console.log('Input Data to Python:', inputData);
 
     // Spawn a Python process and pass data via stdin
-    const pythonProcess = spawn('python', ['analysis.py']);
+    const pythonPath = path.join(__dirname, '.venv', 'Scripts', 'python.exe');
+    const pythonProcess = spawn(pythonPath, ['analysis.py']);
 
     let analysisResult = '';
     let errorOutput = '';
@@ -585,11 +586,13 @@ app.post('/analyzeFinancialData', (req, res) => {
     // Capture stdout data from the Python script
     pythonProcess.stdout.on('data', (data) => {
         analysisResult += data.toString();
+        console.log(`Output: ${data}`);
     });
 
     // Capture stderr data from the Python script
     pythonProcess.stderr.on('data', (data) => {
         errorOutput += data.toString();
+        console.error(`Error: ${data}`);
     });
 
     // When Python process ends
@@ -620,6 +623,7 @@ app.post('/analyzeFinancialData', (req, res) => {
     // Handle any errors from the Python process
     pythonProcess.on('error', (error) => {
         console.error('Python process error:', error);
+        console.error('Python Error Output:', errorOutput); 
         // Ensure only one response is sent
         if (!res.headersSent) {
             res.status(500).json({ error: 'Internal Server Error' });

@@ -8,6 +8,10 @@ from sklearn.ensemble import IsolationForest
 def prepare_data(aggregated_data, budget_data):
     df_aggregated = pd.DataFrame(aggregated_data)
     df_budget = pd.DataFrame(budget_data)
+
+    # Convert 'amount' columns to float
+    df_aggregated['amount'] = df_aggregated['amount'].astype(float)
+    df_budget['amount'] = df_budget['amount'].astype(float)
     
     # Process date column and create month column
     df_aggregated['date'] = pd.to_datetime(df_aggregated['date']) + timedelta(days=1)
