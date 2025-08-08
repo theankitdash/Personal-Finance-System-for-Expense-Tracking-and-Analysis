@@ -1,18 +1,4 @@
 services:
-  app:
-    build: .
-    image: theankitdash/finance-tracker:latest
-    container_name: finance-tracker
-    ports:
-      - "3000:3000"
-    depends_on:
-      - mysql  
-    env_file:
-      - .env
-    volumes:
-      - .:/usr/src/app
-    restart: unless-stopped  
-    
 
   mysql:
     image: mysql:8.0
@@ -23,8 +9,27 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
     volumes:
-      - db_data:/var/lib/mysql 
-    restart: unless-stopped     
+      - mysql_data:/var/lib/mysql   
+
+  python-api:
+    build: ./pythonapi
+    ports:
+      - "8000:8000"    
+
+  node-server:
+    build: ./node-backend
+    image: theankitdash/finance-tracker:latest
+    container_name: finance-tracker
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql  
+      - python-api
+    env_file:
+      - .env
+    volumes:
+      - .:/usr/src/app
+    restart: unless-stopped  
 
 volumes:
-  db_data:
+  mysql_data:

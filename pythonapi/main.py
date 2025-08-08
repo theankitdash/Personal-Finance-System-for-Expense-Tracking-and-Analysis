@@ -1,15 +1,19 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Dict, Any
+# from pythonapi.analysis import analyze_financial_data
 from analysis import analyze_financial_data
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI()
+
+origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], 
+    allow_origins=origins, 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,4 +38,4 @@ async def analyze(data: AnalyzeRequest):
     except Exception as e:
         return {"error": str(e)}
 
-# Run the application using: uvicorn main:app --reload
+# Run the application using: uvicorn pythonapi.main:app --reload

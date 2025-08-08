@@ -4,7 +4,6 @@ require('dotenv').config();
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
-const { spawn } = require('child_process');
 const axios = require('axios');
 
 const app = express();
