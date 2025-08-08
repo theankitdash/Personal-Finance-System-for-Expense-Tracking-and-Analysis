@@ -5,6 +5,7 @@ const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const { spawn } = require('child_process');
+const axios = require('axios');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -563,72 +564,15 @@ app.get('/expensesData', (req, res) => {
     });
 });
 
-// Route to perform financial analysis
-app.post('/analyzeFinancialData', (req, res) => {
-    // Extract financial data from request body
-    const { budgets, fromDate, toDate, aggregatedData } = req.body;
-
-    // Prepare data for the Python script
-    const inputData = JSON.stringify({ budgets, fromDate, toDate, aggregatedData });
-    console.log('Input Data to Python:', inputData);
-
-    // Spawn a Python process and pass data via stdin
-    const pythonPath = path.join(__dirname, '.venv', 'Scripts', 'python.exe');
-    const pythonProcess = spawn(pythonPath, ['analysis.py']);
-
-    let analysisResult = '';
-    let errorOutput = '';
-
-    // Write data to the Python process stdin
-    pythonProcess.stdin.write(inputData);
-    pythonProcess.stdin.end();
-
-    // Capture stdout data from the Python script
-    pythonProcess.stdout.on('data', (data) => {
-        analysisResult += data.toString();
-        console.log(`Output: ${data}`);
-    });
-
-    // Capture stderr data from the Python script
-    pythonProcess.stderr.on('data', (data) => {
-        errorOutput += data.toString();
-        console.error(`Error: ${data}`);
-    });
-
-    // When Python process ends
-    pythonProcess.on('close', (code) => {
-        if (code !== 0) {
-            console.error('Python process exited with error code:', code);
-            // Ensure only one response is sent
-            if (!res.headersSent) {
-                res.status(500).json({ error: 'Internal Server Error', details: errorOutput });
-            }
-        } else {
-            try {
-                // Send the result back to the client as plain text
-                if (!res.headersSent) {
-                    res.set('Content-Type', 'text/plain');
-                    res.send(analysisResult);
-                }
-            } catch (error) {
-                console.error('Error parsing JSON:', error);
-                // Ensure only one response is sent
-                if (!res.headersSent) {
-                    res.status(500).json({ error: 'Internal Server Error' });
-                }
-            }
-        }
-    });
-
-    // Handle any errors from the Python process
-    pythonProcess.on('error', (error) => {
-        console.error('Python process error:', error);
-        console.error('Python Error Output:', errorOutput); 
-        // Ensure only one response is sent
-        if (!res.headersSent) {
-            res.status(500).json({ error: 'Internal Server Error' });
-        }
-    });
+app.post('/analyzeFinancialData', async (req, res) => {
+    try {
+        const response = await axios.post(`${process.env.PYTHON_API_URL}/analyze`, req.body);
+        res.set('Content-Type', 'text/plain');
+        res.send(response.data.report);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to call Python API' });
+    }
 });
    
 
