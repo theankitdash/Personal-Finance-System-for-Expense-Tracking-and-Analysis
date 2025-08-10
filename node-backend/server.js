@@ -625,3 +625,6 @@ app.get('/logout', (req, res) => {
 app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
 });
+
+
+// Run with command: nodemon node-backend/server.js
