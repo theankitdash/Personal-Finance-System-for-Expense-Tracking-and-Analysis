@@ -16,7 +16,7 @@ A containerized financial analytics platform that utilizes the Isolation Forest 
 * **Containerization**: Docker & Docker Compose
 * **API Framework**: FastAPI (Python)
 * **Frontend**: JavaScript
-* **Database**: MySQL
+* **Database**: PostgreSQL
 
 ## Getting Started
 
