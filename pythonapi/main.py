@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Dict, Any
-# from pythonapi.analysis import analyze_financial_data
-from analysis import analyze_financial_data
+from pythonapi.analysis import analyze_financial_data
+#from analysis import analyze_financial_data
 from fastapi.middleware.cors import CORSMiddleware
 import os
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 require('dotenv').config();
-const mysql = require('mysql2');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const axios = require('axios');
@@ -20,150 +20,108 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-// MySQL database setup
-const db = mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
-    port: process.env.MYSQL_PORT
+// PostgreSQL database setup
+const pool = new Pool({
+    host: process.env.PG_HOST,
+    user: process.env.PG_USER,
+    password: process.env.PG_PASSWORD,
+    database: process.env.PG_DATABASE,
+    port: process.env.PG_PORT
 });
 
-db.connect((err) => {
-    if (err) {
-        console.error('Error connecting to MySQL:', err.message);
-    } else {
-        console.log('Connected to MySQL database');
-        // Create a 'credentials' table if it doesn't exist
-        db.query(`
+// Table creation
+(async () => {
+    try {
+        await pool.query(`
             CREATE TABLE IF NOT EXISTS credentials (
-                phone BIGINT UNIQUE PRIMARY KEY,
+                phone BIGINT PRIMARY KEY,
                 password VARCHAR(255)
-            )
-        `, (err) => {
-            if (err) {
-                console.error('Error creating table:', err.message);
-            }
-        });
+            );
+        `);
 
-        // Create a 'personal_details' table if it doesn't exist
-        db.query(`
+        await pool.query(`
             CREATE TABLE IF NOT EXISTS personal_details (
                 phone BIGINT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 gender VARCHAR(10) NOT NULL,
                 date_of_birth DATE NOT NULL,
                 FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
-            )
-        `, (err) => {
-            if (err) {
-                console.error('Error creating table:', err.message);
-            }
-        });
+            );
+        `);
 
-        // Create a 'budget' table if it doesn't exist
-        db.query(`
+        await pool.query(`
             CREATE TABLE IF NOT EXISTS budget (
                 phone BIGINT NOT NULL,
                 category VARCHAR(100) NOT NULL,
-                amount DECIMAL(10, 2),
+                amount NUMERIC(10, 2),
                 PRIMARY KEY (phone, category),
                 FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
-            )
-        `, (err) => {
-            if (err) {
-                console.error('Error creating table:', err.message);
-            }
-        });
+            );
+        `);
 
-        // Create a 'expenses' table if it doesn't exist
-        db.query(`
+        await pool.query(`
             CREATE TABLE IF NOT EXISTS expenses (
-                id INT AUTO_INCREMENT PRIMARY KEY,
+                id SERIAL PRIMARY KEY,
                 phone BIGINT NOT NULL,
                 date DATE NOT NULL,
-                amount DECIMAL(10, 2) NOT NULL,
+                amount NUMERIC(10, 2) NOT NULL,
                 description VARCHAR(200) NOT NULL,
                 category VARCHAR(100) NOT NULL,
                 FOREIGN KEY (phone) REFERENCES credentials(phone) ON DELETE CASCADE ON UPDATE CASCADE
-            )
-        `, (err) => {
-            if (err) {
-                console.error('Error creating budget table:', err.message);
-            }
-        });
+            );
+        `);
+
+        console.log('Connected to PostgreSQL and ensured tables exist');
+    } catch (err) {
+        console.error('Error setting up PostgreSQL:', err.message);
     }
-});
+})();
 
 // Authentication endpoint for login
 app.post('/auth/login', async (req, res) => {
-    const {phone, password } = req.body;
-
-    // Retrieve hashed password from the database based on the phone number
-    const query = 'SELECT * FROM credentials WHERE phone = ?';
-    db.query(query, [phone], async (err, results) => {
-        if (err) {
-            console.error('Error retrieving user:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-
-        if (results.length === 0) {
+    const { phone, password } = req.body;
+    try {
+        const result = await pool.query('SELECT * FROM credentials WHERE phone = $1', [phone]);
+        if (result.rows.length === 0) {
             return res.status(401).json({ success: false, message: 'Invalid Credentials!' });
         }
-
-        const hashedPassword = results[0].password;
-
-        // Compare hashed password with the submitted password
+        const hashedPassword = result.rows[0].password;
         const passwordMatch = await bcrypt.compare(password, hashedPassword);
-
         if (passwordMatch) {
-            // Store the phone number in the session
             req.session.phone = phone;
             res.json({ success: true });
-
         } else {
             res.status(401).json({ success: false, message: 'Invalid Credentials!' });
         }
-    });
+    } catch (err) {
+        console.error('Error retrieving user:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 // Authentication endpoint for user registration
 app.post('/auth/register', async (req, res) => {   
     const { phone, password } = req.body;
-
-    // Hash the password before storing it in the database
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert user into the 'credentials' table
-    const insertQuery = 'INSERT INTO credentials (phone, password) VALUES (?, ?)';
-    db.query(insertQuery, [phone, hashedPassword], (err) => {
-        if (err) {
-            console.error('Error inserting user:', err.message);
-            return res.status(400).json({ success: false, message: 'Phone Number Already Exists!' });
-        }
+    try {
+        await pool.query('INSERT INTO credentials (phone, password) VALUES ($1, $2)', [phone, hashedPassword]);
         req.session.phone = phone;
         res.json({ success: true });
-    });
+    } catch (err) {
+        console.error('Error inserting user:', err.message);
+        res.status(400).json({ success: false, message: 'Phone Number Already Exists!' });
+    }
 });
 
 // Endpoint to verify phone number and date of birth
 app.post('/auth/verify', async (req, res) => {
     const { phone, dob } = req.body;
-
     try {
-        // Verify Date of Birth
-        const query = 'SELECT * FROM personal_details WHERE phone = ? AND date_of_birth = ?';
-        db.query(query, [phone, dob], (err, results) => {
-            if (err) {
-                console.error('Error retrieving details:', err.message);
-                return res.status(500).json({ success: false, message: 'Internal Server Error' });
-            }
-
-            if (results.length === 0) {
-                return res.status(400).json({ success: false, message: 'Verification failed' });
-            }
-            res.json({ success: true });
-        });
+        const result = await pool.query('SELECT * FROM personal_details WHERE phone = $1 AND date_of_birth = $2', [phone, dob]);
+        if (result.rows.length === 0) {
+            return res.status(400).json({ success: false, message: 'Verification failed' });
+        }
+        res.json({ success: true });
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ success: false, message: 'Server error' });
@@ -173,394 +131,270 @@ app.post('/auth/verify', async (req, res) => {
 // Endpoint to reset password
 app.post('/auth/resetPassword', async (req, res) => {
     const { phone, newPassword } = req.body;
-
     try {
         const newHashedPassword = await bcrypt.hash(newPassword, 10);
-
-        // Update the hashed password in the database
-        const updateQuery = 'UPDATE credentials SET password = ? WHERE phone = ?';
-        db.query(updateQuery, [newHashedPassword, phone], (err) => {
-            if (err) {
-                console.error('Error updating password:', err.message);
-                return res.status(500).json({ success: false, message: 'Internal Server Error' });
-            }
-            res.json({ success: true, message: 'Password updated successfully' });
-        });
+        await pool.query('UPDATE credentials SET password = $1 WHERE phone = $2', [newHashedPassword, phone]);
+        res.json({ success: true, message: 'Password updated successfully' });
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error updating password:', error.message);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
 
 
 //Endpoint to get current phone number and password
-app.get('/personalDetails', (req, res) => {
-    // Check if the user is logged in
+app.get('/personalDetails', async (req, res) => {
     if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
-
-    // Fetch current credentials for the logged-in user
     const phone = req.session.phone;
-
-    const personalDetailsQuery = `
-        SELECT name, gender, date_of_birth AS dateOfBirth             
-        FROM personal_details  
-        WHERE phone = ?
-    `;
-
-    // Execute queries
-    db.query(personalDetailsQuery, [phone], (err, results) => {
-        if (err) {
-            console.error('Error retrieving personal details:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-
-        // Check if any details were returned
-        if (results.length === 0) {
+    try {
+        const result = await pool.query(
+            'SELECT name, gender, date_of_birth AS "dateOfBirth" FROM personal_details WHERE phone = $1',
+            [phone]
+        );
+        if (result.rows.length === 0) {
             return res.status(404).json({ success: false, message: 'No personal details found' });
         }
-
-        const personalDetails = results[0];
-
-        res.json({success: true, phone, personalDetails});
-       
-    });
+        const personalDetails = result.rows[0];
+        res.json({ success: true, phone, personalDetails });
+    } catch (err) {
+        console.error('Error retrieving personal details:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 // Endpoint to save personal details
-app.post('/savePersonalDetails', (req, res) => {
-    // Check if the user is logged in
-    if (!req.session.phone ) {
+app.post('/savePersonalDetails', async (req, res) => {
+    if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
-
     const { name, gender, dateOfBirth } = req.body;
     const phone = req.session.phone;
-
-    // Insert or update personal details for the user
-    const insertOrUpdateQuery = `
-        INSERT INTO personal_details (phone, name, gender, date_of_birth)
-        VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE name=?, gender=?, date_of_birth=?
-    `;
-    db.query(insertOrUpdateQuery, [phone, name, gender, dateOfBirth, name, gender, dateOfBirth], (err) => {
-        if (err) {
-            console.error('Error saving personal details:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
+    try {
+        await pool.query(
+            `INSERT INTO personal_details (phone, name, gender, date_of_birth)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (phone) DO UPDATE SET name = EXCLUDED.name, gender = EXCLUDED.gender, date_of_birth = EXCLUDED.date_of_birth`,
+            [phone, name, gender, dateOfBirth]
+        );
         res.json({ success: true, message: 'Personal details saved successfully' });
-    });
+    } catch (err) {
+        console.error('Error saving personal details:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 // Endpoint to retrieve expenses for the current month
-app.get('/currentMonthExpenses', (req, res) => {
-    // Check if the user is logged in
-    if (!req.session.phone ) {
+app.get('/currentMonthExpenses', async (req, res) => {
+    if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
-
-    // Fetch expenses for the logged-in user for the current month
     const phone = req.session.phone;
-
-    // SQL query to fetch expenses for the current month
-    const query = `
-        SELECT id, date, amount, description, category
-        FROM expenses
-        WHERE phone = ? AND MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE())
-    `;
-
-    db.query(query, phone, (err, results) => {
-        if (err) {
-            console.error('Error retrieving current month expenses:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-
-        res.json(results);
-    });
+    try {
+        const result = await pool.query(
+            `SELECT id, date, amount, description, category
+            FROM expenses
+            WHERE phone = $1 AND EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM date) = EXTRACT(YEAR FROM CURRENT_DATE)`,
+            [phone]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error retrieving current month expenses:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 
 // Endpoint to retrieve expenses history for the current user
-app.get('/expensesHistory', (req, res) => {
-    // Check if the user is logged in
-    if (!req.session.phone ) {
+app.get('/expensesHistory', async (req, res) => {
+    if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
-
-    // Fetch expenses history for the logged-in user based on selected category
     const phone = req.session.phone;
-    const filter = req.query.filter || 'all'; // Default to 'all' if not specified
+    const filter = req.query.filter || 'all';
     const value = req.query.value || '';
-
-    let query = `   SELECT id, 
-                        date, 
-                        amount, 
-                        description, 
-                        category 
-                    FROM expenses 
-                    WHERE phone = ?
-                `;
+    let query = `SELECT id, date, amount, description, category FROM expenses WHERE phone = $1`;
     const queryParams = [phone];
-
-    // Modify query based on the filter type
     if (filter !== 'all') {
         if (filter === 'category') {
-            query += ' AND category = ?';
+            query += ' AND category = $2';
             queryParams.push(value);
         } else if (filter === 'description') {
-            query += ' AND description = ?';
+            query += ' AND description = $2';
             queryParams.push(value);
         } else if (filter === 'date') {
-            query += ' AND date = ?';
-                queryParams.push(value);
+            query += ' AND date = $2';
+            queryParams.push(value);
         }
     }
-
     query += ' ORDER BY date DESC';
-
-    db.query(query, queryParams, (err, results) => {
-        if (err) {
-            console.error('Error retrieving expenses history:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-
-        res.json(results);
-    });
+    try {
+        const result = await pool.query(query, queryParams);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error retrieving expenses history:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 // Endpoint to retrieve unique options for the selected filter type
-app.get('/uniqueOptions', (req, res) => {
+app.get('/uniqueOptions', async (req, res) => {
     const phone = req.session.phone;
     const filterType = req.query.filter;
-
     let query = '';
     if (filterType === 'category') {
-        query = 'SELECT DISTINCT category AS uniqueOption FROM expenses WHERE phone = ?';
+        query = 'SELECT DISTINCT category AS "uniqueOption" FROM expenses WHERE phone = $1';
     } else if (filterType === 'description') {
-        query = 'SELECT DISTINCT description AS uniqueOption FROM expenses WHERE phone = ?';
+        query = 'SELECT DISTINCT description AS "uniqueOption" FROM expenses WHERE phone = $1';
     } else if (filterType === 'date') {
-        query = 'SELECT DISTINCT date AS uniqueOption FROM expenses WHERE phone = ?';
+        query = 'SELECT DISTINCT date AS "uniqueOption" FROM expenses WHERE phone = $1';
     } else {
         return res.status(400).json({ success: false, message: 'Invalid filter type' });
     }
-
-    db.query(query, [phone], (err, results) => {
-        if (err) {
-            console.error('Error retrieving unique options:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-
-        const uniqueOptions = results.map(result => result.uniqueOption);
+    try {
+        const result = await pool.query(query, [phone]);
+        const uniqueOptions = result.rows.map(row => row.uniqueOption);
         res.json(uniqueOptions);
-    });
+    } catch (err) {
+        console.error('Error retrieving unique options:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 // Endpoint to retrieve distinct expense categories
-app.get('/categories', (req, res) => {
-    // Check if the user is logged in
+app.get('/categories', async (req, res) => {
     if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
-
-    // Fetch distinct categories for the logged-in user
     const phone = req.session.phone;
-
-    // SQL query to fetch distinct categories for the user
-    const query = `
-        SELECT DISTINCT category
-        FROM budget
-        WHERE phone = ?
-    `;
-
-    db.query(query, phone, (err, results) => {
-        if (err) {
-            console.error('Error retrieving categories:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-
-        // Extract the categories and return them
-        const categories = results.map(row => row.category);
+    try {
+        const result = await pool.query('SELECT DISTINCT category FROM budget WHERE phone = $1', [phone]);
+        const categories = result.rows.map(row => row.category);
         res.json({ success: true, categories });
-    });
+    } catch (err) {
+        console.error('Error retrieving categories:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 // Authentication endpoint for accessing budget information
-app.post('/saveExpenses', (req, res) => {
-    // Check if the user is logged in
-    if (!req.session.phone ) {
-        return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-
-    // Extract expense details from request body
-    const { date, amount, description, category} = req.body;
-    const phone = req.session.phone;
-
-    // Insert expense into the database
-    const insertQuery = `
-        INSERT INTO expenses (phone, date, amount, description, category)
-        VALUES (?, ?, ?, ?, ?)
-    `;
-
-    const queryParams = [phone, date, amount, description, category];
-
-    db.query(insertQuery, queryParams, (err, result) => {
-        if (err) {
-            console.error('Error adding expense:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-        // Send the inserted expense's id back to the client
-        res.json({ success: true, message: 'Expense added successfully', id: result.insertId });
-    });
-});
-
-// Endpoint for updating an existing expense
-app.put('/updateExpenses/:id', (req, res) => {
-    // Check if the user is logged in
+app.post('/saveExpenses', async (req, res) => {
     if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
+    const { date, amount, description, category } = req.body;
+    const phone = req.session.phone;
+    try {
+        const result = await pool.query(
+            'INSERT INTO expenses (phone, date, amount, description, category) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [phone, date, amount, description, category]
+        );
+        res.json({ success: true, message: 'Expense added successfully', id: result.rows[0].id });
+    } catch (err) {
+        console.error('Error adding expense:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
 
-    // Extract expense details from request body
+// Endpoint for updating an existing expense
+app.put('/updateExpenses/:id', async (req, res) => {
+    if (!req.session.phone) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
     const { date, amount, description, category } = req.body;
     const { id } = req.params;
     const phone = req.session.phone;
-
-    // Update expense in the database
-    const updateQuery = `
-        UPDATE expenses
-        SET date = ?, amount = ?, description = ?, category = ?
-        WHERE id = ? AND phone = ?
-    `;
-
-    const queryParams = [date, amount, description, category, id, phone];
-    
-    db.query(updateQuery, queryParams, (err, result) => {
-        if (err) {
-            console.error('Error updating expense:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-
-        // Check if the expense was found and updated
-        if (result.affectedRows === 0) {
+    try {
+        const result = await pool.query(
+            `UPDATE expenses SET date = $1, amount = $2, description = $3, category = $4 WHERE id = $5 AND phone = $6`,
+            [date, amount, description, category, id, phone]
+        );
+        if (result.rowCount === 0) {
             return res.status(404).json({ success: false, message: 'Expense not found or not authorized' });
         }
-
         res.json({ success: true, message: 'Expense updated successfully' });
-    });
+    } catch (err) {
+        console.error('Error updating expense:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 
 // Endpoint to remove an expense
-app.delete('/expenses/:id', (req, res) => {
-    // Check if the user is logged in
-    if (!req.session.phone ) {
-        return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-
-    // Extract the id of the expense to be removed from the request parameters
-    const id = parseInt(req.params.id, 10); // Parse the id as an integer with base 10
-
-    // Delete the expense from the database
-    const deleteQuery = `
-        DELETE FROM expenses WHERE id = ?
-    `;
-    db.query(deleteQuery, [id], (err) => {
-        if (err) {
-            console.error('Error removing expense:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-        res.json({ success: true, message: 'Expense removed successfully' });
-    });
-});
-
-// Endpoint to save or update budget details
-app.post('/saveBudgetDetails', (req, res) => {
-    // Check if the user is logged in
+app.delete('/expenses/:id', async (req, res) => {
     if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
+    const id = parseInt(req.params.id, 10);
+    try {
+        await pool.query('DELETE FROM expenses WHERE id = $1', [id]);
+        res.json({ success: true, message: 'Expense removed successfully' });
+    } catch (err) {
+        console.error('Error removing expense:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
 
+// Endpoint to save or update budget details
+app.post('/saveBudgetDetails', async (req, res) => {
+    if (!req.session.phone) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
     const { category, amount } = req.body;
     const phone = req.session.phone;
-
-    // Handle blank or invalid amount value
     let amountValue;
     if (amount === '' || amount === null || isNaN(parseFloat(amount))) {
         amountValue = null;
     } else {
         amountValue = parseFloat(amount);
     }
-
-    // Insert or update the budget details for the user
-    const insertOrUpdateBudgetQuery = `
-        INSERT INTO budget (phone, category, amount)
-        VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
-            amount = VALUES(amount)
-    `;
-
-    db.query(insertOrUpdateBudgetQuery, [phone, category, amountValue], (err) => {
-        if (err) {
-            console.error('Error saving budget details:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
+    try {
+        await pool.query(
+            `INSERT INTO budget (phone, category, amount)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (phone, category) DO UPDATE SET amount = EXCLUDED.amount`,
+            [phone, category, amountValue]
+        );
         res.json({ success: true, message: 'Budget details saved successfully' });
-    });
+    } catch (err) {
+        console.error('Error saving budget details:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 // Endpoint to get budget details
-app.get('/getBudgetDetails', (req, res) => {
-    // Check if the user is logged in
+app.get('/getBudgetDetails', async (req, res) => {
     if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
-
     const phone = req.session.phone;
-
-    // Query to get the budget details for the user
-    const getBudgetDetailsQuery = `
-        SELECT category, amount
-        FROM budget
-        WHERE phone = ?
-    `;
-
-    db.query(getBudgetDetailsQuery, [phone], (err, results) => {
-        if (err) {
-            console.error('Error retrieving budget details:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-        res.json({ success: true, budgets: results });
-    });
+    try {
+        const result = await pool.query('SELECT category, amount FROM budget WHERE phone = $1', [phone]);
+        res.json({ success: true, budgets: result.rows });
+    } catch (err) {
+        console.error('Error retrieving budget details:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 
 // Endpoint to retrieve data for the analysis
-app.get('/expensesData', (req, res) => {
-    // Check if the user is logged in
-    if (!req.session.phone ) {
+app.get('/expensesData', async (req, res) => {
+    if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
-
-    // Fetch data for the analysis based on selected date range
     const { fromDate, toDate } = req.query;
-    
-
-    // Query to fetch data within the specified date range
-    let Query = `
-        SELECT category, amount, description, date 
-        FROM expenses
-        WHERE date >= ? AND date <= ?
-    `;
-
-    db.query(Query, [fromDate, toDate], (err, Result) => {
-        if (err) {
-            console.error('Error retrieving Data:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
-        }
-
-        res.json({aggregatedData: Result});
-    });
+    try {
+        const result = await pool.query(
+            'SELECT category, amount, description, date FROM expenses WHERE date >= $1 AND date <= $2',
+            [fromDate, toDate]
+        );
+        res.json({ aggregatedData: result.rows });
+    } catch (err) {
+        console.error('Error retrieving Data:', err.message);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 app.post('/analyzeFinancialData', async (req, res) => {
@@ -577,32 +411,18 @@ app.post('/analyzeFinancialData', async (req, res) => {
 
 //Endpoint to change the user's password
 app.post('/changePassword', async (req, res) => {
-    // Check if the user is logged in
-    if (!req.session.phone ) {
+    if (!req.session.phone) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
-
     const { newPassword } = req.body;
-
-    // Validate the new password (e.g., check length, complexity)
     if (!newPassword || newPassword.length < 8) {
         return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long' });
     }
-
     try {
-        // Hash the new password
         const newHashedPassword = await bcrypt.hash(newPassword, 10);
-
-        // Update the hashed password in the database
         const phone = req.session.phone;
-        const updateQuery = 'UPDATE credentials SET password = ? WHERE phone = ?';
-        db.query(updateQuery, [newHashedPassword, phone], (err) => {
-            if (err) {
-                console.error('Error updating password:', err.message);
-                return res.status(500).json({ success: false, message: 'Internal Server Error' });
-            }
-            res.json({ success: true, message: 'Password updated successfully' });
-        });
+        await pool.query('UPDATE credentials SET password = $1 WHERE phone = $2', [newHashedPassword, phone]);
+        res.json({ success: true, message: 'Password updated successfully' });
     } catch (error) {
         console.error('Error changing password:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });

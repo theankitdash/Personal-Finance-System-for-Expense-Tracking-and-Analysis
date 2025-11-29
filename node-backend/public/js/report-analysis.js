@@ -148,10 +148,10 @@ function renderPieChart(rawData) {
             }]
         },
         options: {
-            scales: {
-                yAxes: [{
-                    display: false
-                }]
+            plugins: {
+                legend: {
+                    display: true
+                }
             }
         }
     });

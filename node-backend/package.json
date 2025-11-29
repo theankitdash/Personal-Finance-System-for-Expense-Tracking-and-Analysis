@@ -1,4 +1,13 @@
 {
+  "dependencies": {
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "nodemon": "^3.1.11",
+    "pg": "^8.16.3"
+  },
   "name": "finance-tracker",
   "version": "1.0.0",
   "description": "A finance tracker for tracking monthly expenses.",
@@ -10,19 +19,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "axios": "^1.11.0",
-    "bcryptjs": "^3.0.2",
-    "dotenv": "^17.2.1",
-    "express": "^5.1.0",
-    "express-session": "^1.18.1",
-    "express-validator": "^7.2.1",
-    "mysql2": "^3.14.3"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
-  },
-  "engines": {
-    "node": "22.x"
-  }
+  "type": "commonjs"
 }

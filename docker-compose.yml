@@ -4,12 +4,13 @@ services:
     image: mysql:8.0
     container_name: mysql-db
     ports:
-      - "3306:3306"
+      - "5432:5432"
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE}
     volumes:
-      - mysql_data:/var/lib/mysql   
+      - postgres_data:/var/lib/postgresql/data
 
   python-api:
     build: ./pythonapi
@@ -23,7 +24,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - mysql  
+      - postgres  
       - python-api
     env_file:
       - .env
