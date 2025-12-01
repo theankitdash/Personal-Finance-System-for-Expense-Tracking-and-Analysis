@@ -59,28 +59,20 @@ header {
 
 .container {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   width: 100%;
   margin: 0 auto;
   padding: 20px;
   box-sizing: border-box;
   overflow-x: hidden;
-}
-
-.left-content {
-  flex-direction: column;
-  justify-content: center;
-  margin-right: 20px;
-  max-width: 40%;
   text-align: left;
 }
 
-.right-content {
-  display: flex;
-  flex-direction: column;
-  max-width: 60%;
-  margin-left: 70px;
+.analysis-content {
+  max-width: 100%;
+  margin: 0;
   text-align: left;
+  padding: 10px;
 }
 
 #graph-container {
@@ -101,7 +93,6 @@ header {
 
 #analysis-container {
   display: none;
-  flex: 1;
   margin-top: 20px;
 }
 
@@ -164,13 +155,10 @@ header {
 }
 
 @media (max-width: 768px) {
-  .container {
-    flex-direction: column;
+  .analysis-content {
+    padding: 10px;
   }
-
-  .left-content, .right-content {
-    max-width: 100%;
-    margin-right: 0;
-    margin-left: 0;
+  #analysis-container {
+    margin-top: 15px;
   }
 }

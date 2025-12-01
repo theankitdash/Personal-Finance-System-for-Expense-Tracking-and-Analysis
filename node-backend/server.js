@@ -4,14 +4,14 @@ require('dotenv').config();
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
-const axios = require('axios');
+const jwt = require("jsonwebtoken");
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Initialize express-session middleware
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your_secret_key',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true
 }));
@@ -89,6 +89,18 @@ app.post('/auth/login', async (req, res) => {
         const passwordMatch = await bcrypt.compare(password, hashedPassword);
         if (passwordMatch) {
             req.session.phone = phone;
+            const token = jwt.sign(
+                { phone },
+                process.env.JWT_SECRET,
+                { expiresIn: "7d" }
+            );
+
+            res.cookie("auth_token", token, {
+                httpOnly: true,
+                secure: false,         // true if HTTPS (use false on localhost)
+                sameSite: "strict",
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            });
             res.json({ success: true });
         } else {
             res.status(401).json({ success: false, message: 'Invalid Credentials!' });
@@ -378,37 +390,32 @@ app.get('/getBudgetDetails', async (req, res) => {
     }
 });
 
-
-// Endpoint to retrieve data for the analysis
-app.get('/expensesData', async (req, res) => {
-    if (!req.session.phone) {
-        return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-    const { fromDate, toDate } = req.query;
-    try {
-        const result = await pool.query(
-            'SELECT category, amount, description, date FROM expenses WHERE date >= $1 AND date <= $2',
-            [fromDate, toDate]
-        );
-        res.json({ aggregatedData: result.rows });
-    } catch (err) {
-        console.error('Error retrieving Data:', err.message);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
-    }
-});
-
+// Endpoint to analyze financial data by Python API
 app.post('/analyzeFinancialData', async (req, res) => {
+    const { fromDate, toDate } = req.body;
     try {
-        const response = await axios.post(`${process.env.PYTHON_API_URL}/analyze`, req.body);
-        res.set('Content-Type', 'text/plain');
-        res.send(response.data.report);
+        const response = await fetch(`${process.env.PYTHON_API_URL}/analyze`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Cookie: req.headers.cookie  // Forward the session & JWT cookies
+            },
+            body: JSON.stringify({ fromDate, toDate })
+        });
+
+        if (!response.ok) {
+            return res.status(response.status).json({ error: 'Python API error' });
+        }
+
+        const data = await response.json(); // FastAPI returns JSON { report: "..." }
+        res.send(data.report);
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to call Python API' });
     }
 });
    
-
 //Endpoint to change the user's password
 app.post('/changePassword', async (req, res) => {
     if (!req.session.phone) {
@@ -447,4 +454,4 @@ app.listen(port, () => {
 });
 
 
-// Run with command: nodemon node-backend/server.js
+// Run with command: npx nodemon node-backend/server.js
