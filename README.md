@@ -11,11 +11,11 @@ A containerized financial analytics platform that utilizes the Isolation Forest 
 
 ## Tech Stack
 
-* **Backend**: Node.js
+* **Backend**: FastAPI
 * **Data Analysis**: Python (scikit-learn)
 * **Containerization**: Docker & Docker Compose
 * **API Framework**: FastAPI (Python)
-* **Frontend**: JavaScript
+* **Frontend**: Node.js
 * **Database**: PostgreSQL
 
 ## Getting Started
