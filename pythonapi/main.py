@@ -51,6 +51,15 @@ async def analyze(data: AnalyzeRequest, auth_token: str = Cookie(None)):
             port=os.getenv("PG_PORT")
         )
 
+        # Query all expenses 
+        rows = await conn.fetch(
+            "SELECT category, amount, description, date FROM expenses WHERE phone = $1",
+            phone
+        )
+
+        # Convert asyncpg Record objects to list of dicts
+        expenses = [dict(row) for row in rows]
+
         # Query expenses for the given date range
         rows = await conn.fetch(
             "SELECT category, amount, description, date FROM expenses WHERE phone = $1 AND date >= $2 AND date <= $3",
@@ -60,8 +69,7 @@ async def analyze(data: AnalyzeRequest, auth_token: str = Cookie(None)):
         )
 
         # Convert asyncpg Record objects to list of dicts
-        expenses = [dict(row) for row in rows]
-        print(expenses)
+        range_expenses = [dict(row) for row in rows]
 
         # Fetch budget for the user
         budget_rows = await conn.fetch(
@@ -69,7 +77,6 @@ async def analyze(data: AnalyzeRequest, auth_token: str = Cookie(None)):
             phone
         )
         budgets = [dict(row) for row in budget_rows]
-        print(budgets)
 
         await conn.close()
 
@@ -78,6 +85,7 @@ async def analyze(data: AnalyzeRequest, auth_token: str = Cookie(None)):
             budgets,
             data.fromDate,
             data.toDate,
+            range_expenses,
             expenses
         )
 

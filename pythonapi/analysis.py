@@ -1,761 +1,133 @@
-"""
-A modular ML toolkit for the financial analysis script you provided.
-- Features:
-  1) Multivariate unsupervised anomaly detection: LOF, One-Class SVM, PyTorch Autoencoder
-  2) Category-level regression models: RandomForest, GradientBoosting, XGBoost (optional)
-  3) Semantic category embeddings + clustering (sentence-transformers)
-  4) Drift detection (Jensen-Shannon divergence & PSI)
-  5) Plotting helpers for trends, heatmaps, and anomaly scatter charts
-  6) Lightweight adaptive retrain scheduler (rolling-window retraining helpers)
-
-Usage (high-level):
-    from ml_finance_module import FinanceML
-
-    fm = FinanceML()
-    fm.fit_category_embeddings(categories_list)
-    clustered = fm.cluster_categories(n_clusters=12)
-    features_df = fm.build_features(df, budgets_df)
-    fm.fit_unsupervised(features_df)
-    anomalies = fm.detect_anomalies(features_df)
-    fm.train_regressors(df, budgets_df)
-    preds = fm.predict_next_month(df, budgets_df)
-
-Dependencies:
-    pandas, numpy, sklearn, matplotlib, scipy, joblib, torch
-    Optional: xgboost, sentence_transformers
-"""
-
-from typing import List, Dict, Optional, Tuple
-import os
-import math
-import json
-import joblib
-import numpy as np
-import pandas as pd
-from datetime import datetime, timedelta
-from collections import defaultdict
 import sys
-
-# sklearn / scipy
-from sklearn.preprocessing import StandardScaler
-from sklearn.neighbors import LocalOutlierFactor
-from sklearn.svm import OneClassSVM
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-from sklearn.model_selection import train_test_split
-from scipy.spatial.distance import jensenshannon
-from scipy import stats
-import matplotlib.pyplot as plt
-
-# Optional imports (lazy failures with instructions)
-try:
-    import xgboost as xgb
-    _HAS_XGBOOST = True
-except Exception:
-    _HAS_XGBOOST = False
-
-try:
-    from sentence_transformers import SentenceTransformer
-    _HAS_SENTENCE_TRANSFORMERS = True
-except Exception:
-    _HAS_SENTENCE_TRANSFORMERS = False
-
-# PyTorch (required for the autoencoder)
-try:
-    import torch
-    import torch.nn as nn
-    import torch.optim as optim
-    _HAS_TORCH = True
-except Exception:
-    _HAS_TORCH = False
-
-
-class FinanceML:
-    def __init__(self, model_dir: str = 'ml_models', device: Optional[str] = None):
-        os.makedirs(model_dir, exist_ok=True)
-        self.model_dir = model_dir
-        self.scaler = StandardScaler()
-
-        # Placeholders for models
-        self.lof = None
-        self.ocsvm = None
-        self.autoencoder = None  # will hold a PyTorch nn.Module
-        self.autoencoder_threshold = None
-
-        # regressors per category
-        self.regressors = {}
-
-        # embeddings
-        self.category_embeddings = None
-        self.cat_to_vec = {}
-        self.cluster_labels = None
-        self.cluster_model = None
-        self.sentence_model = None
-
-        # device
-        if device is not None:
-            self.device = torch.device(device) if _HAS_TORCH else None
-        else:
-            self.device = torch.device('cuda' if _HAS_TORCH and torch.cuda.is_available() else 'cpu') if _HAS_TORCH else None
-
-    # --------------------- Category embeddings & clustering ---------------------
-    def ensure_sentence_model(self, model_name: str = 'all-MiniLM-L6-v2'):
-        if not _HAS_SENTENCE_TRANSFORMERS:
-            raise ImportError("sentence-transformers is required for semantic category embeddings. Install with: pip install sentence-transformers")
-        if self.sentence_model is None:
-            self.sentence_model = SentenceTransformer(model_name)
-        return self.sentence_model
-
-    def fit_category_embeddings(self, categories: List[str], model_name: str = 'all-MiniLM-L6-v2') -> pd.DataFrame:
-        """Compute sentence embeddings for category names and store mapping."""
-        model = self.ensure_sentence_model(model_name)
-        cats = [str(c) for c in categories]
-        vecs = model.encode(cats, show_progress_bar=False)
-        df = pd.DataFrame(vecs, index=cats)
-        self.category_embeddings = df
-        self.cat_to_vec = {c: vecs[i] for i, c in enumerate(cats)}
-        return df
-
-    def cluster_categories(self, n_clusters: int = 8, method: str = 'kmeans') -> Dict[str, int]:
-        if self.category_embeddings is None:
-            raise ValueError('Call fit_category_embeddings(categories) first')
-
-        X = self.category_embeddings.values
-        if method == 'kmeans':
-            km = KMeans(n_clusters=n_clusters, random_state=42)
-            labels = km.fit_predict(X)
-            self.cluster_model = km
-        else:
-            raise NotImplementedError('Only kmeans implemented for now')
-
-        self.cluster_labels = dict(zip(self.category_embeddings.index.tolist(), labels.tolist()))
-        return self.cluster_labels
-
-    def get_cluster_for_category(self, category: str):
-        if self.cluster_labels is None:
-            return None
-        return self.cluster_labels.get(category)
-
-    def merge_semantic_categories(self, df: pd.DataFrame, how: str = 'cluster') -> pd.DataFrame:
-        """Return a copy of df with a new column 'semantic_category' using cluster labels."""
-        if self.cluster_labels is None:
-            raise ValueError('Run fit_category_embeddings() and cluster_categories() first')
-        df2 = df.copy()
-        df2['semantic_category'] = df2['category'].map(lambda c: f'cluster_{self.cluster_labels.get(c, -1)}')
-        return df2
-
-    # --------------------- Feature engineering ---------------------
-    def build_features(self, df: pd.DataFrame, budgets_df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-        """
-        Build multivariate features per (month, category) row for anomaly detection / regression.
-        Input df: columns ['date','category','amount'] where date is datetime-like.
-        Returns a DataFrame with features and metadata columns.
-        """
-        df = df.copy()
-        df['date'] = pd.to_datetime(df['date'])
-        df['month'] = df['date'].dt.to_period('M').dt.to_timestamp()
-
-        # Group by month & category
-        grp = df.groupby(['month', 'category'])['amount'].sum().reset_index()
-
-        # Total per month for percentage share
-        total_month = grp.groupby('month')['amount'].sum().rename('month_total').reset_index()
-        grp = grp.merge(total_month, on='month', how='left')
-        grp['pct_share'] = grp['amount'] / grp['month_total']
-
-        # Month index (numeric)
-        grp['month_index'] = ((grp['month'] - grp['month'].min()) / np.timedelta64(1, 'M')).astype(int)
-
-        # Days in month
-        grp['days_in_month'] = grp['month'].dt.daysinmonth
-
-        # Weekend vs weekday ratio: approximate from raw transactions
-        tx = df.copy()
-        tx['is_weekend'] = tx['date'].dt.dayofweek >= 5
-        wk = tx.groupby(['month', 'category'])['is_weekend'].mean().rename('weekend_ratio').reset_index()
-        grp = grp.merge(wk, on=['month', 'category'], how='left')
-        grp['weekend_ratio'] = grp['weekend_ratio'].fillna(0.0)
-
-        # Rate of change vs previous month for same category
-        grp = grp.sort_values(['category', 'month'])
-        grp['prev_amount'] = grp.groupby('category')['amount'].shift(1).fillna(0.0)
-        grp['roc_prev'] = (grp['amount'] - grp['prev_amount']) / (grp['prev_amount'].replace(0, np.nan))
-        grp['roc_prev'] = grp['roc_prev'].replace([np.inf, -np.inf], np.nan).fillna(0.0)
-
-        # Budgets
-        if budgets_df is not None and 'category' in budgets_df.columns:
-            budgets = budgets_df.copy()
-            budgets = budgets.set_index('category')['amount'].to_dict()
-            grp['budget_amount'] = grp['category'].map(lambda c: budgets.get(c, np.nan))
-            grp['budget_ratio'] = grp['amount'] / grp['budget_amount']
-            grp['budget_ratio'] = grp['budget_ratio'].replace([np.inf, -np.inf], np.nan).fillna(0.0)
-        else:
-            grp['budget_amount'] = np.nan
-            grp['budget_ratio'] = 0.0
-
-        # volatility: std dev of category over last 3 months
-        grp['volatility_3m'] = grp.groupby('category')['amount'].rolling(window=3, min_periods=1).std().reset_index(level=0, drop=True).fillna(0.0)
-
-        # metadata
-        grp['category_str'] = grp['category'].astype(str)
-        grp['month_str'] = grp['month'].dt.strftime('%b-%Y')
-
-        features = grp[['month', 'month_str', 'month_index', 'category', 'category_str', 'amount', 'month_total', 'pct_share', 'days_in_month', 'weekend_ratio', 'prev_amount', 'roc_prev', 'budget_amount', 'budget_ratio', 'volatility_3m']]
-        features = features.fillna(0.0)
-
-        return features
-
-    # --------------------- PyTorch Autoencoder definition ---------------------
-    class _AE(nn.Module):
-        def __init__(self, input_dim: int, encoding_dim: int):
-            super().__init__()
-            self.encoder = nn.Sequential(
-                nn.Linear(input_dim, encoding_dim * 2),
-                nn.ReLU(),
-                nn.Linear(encoding_dim * 2, encoding_dim),
-                nn.ReLU(),
-            )
-            self.decoder = nn.Sequential(
-                nn.Linear(encoding_dim, encoding_dim * 2),
-                nn.ReLU(),
-                nn.Linear(encoding_dim * 2, input_dim),
-            )
-
-        def forward(self, x):
-            z = self.encoder(x)
-            out = self.decoder(z)
-            return out
-
-    # --------------------- Unsupervised anomaly models ---------------------
-    def fit_unsupervised(self, features_df: pd.DataFrame, feature_columns: Optional[List[str]] = None, ae_train_kwargs: Optional[Dict] = None):
-        """Fit LOF, One-Class SVM, and PyTorch Autoencoder on the passed features dataframe.
-        Saves models to disk under model_dir.
-        """
-        if feature_columns is None:
-            feature_columns = ['month_index', 'days_in_month', 'pct_share', 'weekend_ratio', 'roc_prev', 'budget_ratio', 'volatility_3m', 'amount']
-
-        X = features_df[feature_columns].values.astype(float)
-        X_scaled = self.scaler.fit_transform(X)
-
-        # LOF
-        lof = LocalOutlierFactor(n_neighbors=20, contamination=0.05, novelty=True)
-        lof.fit(X_scaled)
-        self.lof = lof
-        joblib.dump(lof, os.path.join(self.model_dir, 'lof.joblib'))
-
-        # One-Class SVM
-        oc = OneClassSVM(kernel='rbf', gamma='scale', nu=0.05)
-        oc.fit(X_scaled)
-        self.ocsvm = oc
-        joblib.dump(oc, os.path.join(self.model_dir, 'ocsvm.joblib'))
-
-        # Autoencoder (PyTorch)
-        if not _HAS_TORCH:
-            self.autoencoder = None
-            self.autoencoder_threshold = None
-        else:
-            # training hyperparameters
-            kwargs = dict(epochs=200, batch_size=32, lr=1e-3, val_split=0.1, patience=10)
-            if ae_train_kwargs:
-                kwargs.update(ae_train_kwargs)
-
-            dim = X_scaled.shape[1]
-            encoding_dim = max(4, dim // 2)
-            device = self.device or torch.device('cpu')
-
-            ae = self._AE(dim, encoding_dim).to(device)
-            optimizer = optim.Adam(ae.parameters(), lr=kwargs['lr'])
-            criterion = nn.MSELoss()
-
-            X_tensor = torch.tensor(X_scaled, dtype=torch.float32)
-            # simple train/val split
-            if kwargs['val_split'] > 0 and X_tensor.size(0) > 4:
-                n_val = max(1, int(len(X_tensor) * kwargs['val_split']))
-                n_train = len(X_tensor) - n_val
-                perm = torch.randperm(len(X_tensor))
-                train_idx = perm[:n_train]
-                val_idx = perm[n_train:]
-                X_train = X_tensor[train_idx].to(device)
-                X_val = X_tensor[val_idx].to(device)
-            else:
-                X_train = X_tensor.to(device)
-                X_val = None
-
-            best_val_loss = float('inf')
-            patience = kwargs['patience']
-            cur_patience = 0
-
-            ae.train()
-            for epoch in range(kwargs['epochs']):
-                # mini-batch training
-                perm = torch.randperm(X_train.size(0))
-                total_loss = 0.0
-                for i in range(0, X_train.size(0), kwargs['batch_size']):
-                    idx = perm[i:i + kwargs['batch_size']]
-                    batch = X_train[idx]
-                    optimizer.zero_grad()
-                    recon = ae(batch)
-                    loss = criterion(recon, batch)
-                    loss.backward()
-                    optimizer.step()
-                    total_loss += float(loss.item()) * batch.size(0)
-
-                # validation
-                val_loss = None
-                if X_val is not None:
-                    ae.eval()
-                    with torch.no_grad():
-                        recon_val = ae(X_val)
-                        val_loss = float(criterion(recon_val, X_val).item())
-                    ae.train()
-                else:
-                    val_loss = total_loss / max(1, X_train.size(0))
-
-                # early stopping check
-                if val_loss < best_val_loss - 1e-6:
-                    best_val_loss = val_loss
-                    cur_patience = 0
-                    # save best state temporarily
-                    best_state = {k: v.cpu() for k, v in ae.state_dict().items()}
-                else:
-                    cur_patience += 1
-                    if cur_patience >= patience:
-                        # restore best state and stop
-                        ae.load_state_dict({k: v.to(device) for k, v in best_state.items()})
-                        break
-
-            # compute reconstruction error threshold using best model on full data
-            ae.eval()
-            with torch.no_grad():
-                X_all = X_tensor.to(device)
-                recon_all = ae(X_all)
-                mse = torch.mean((recon_all - X_all) ** 2, dim=1).cpu().numpy()
-            thresh = float(mse.mean() + 3 * mse.std())
-
-            self.autoencoder = ae
-            self.autoencoder_threshold = thresh
-
-            # persist model
-            torch.save(ae.state_dict(), os.path.join(self.model_dir, 'autoencoder_pytorch.pt'))
-
-        # Save scaler
-        joblib.dump(self.scaler, os.path.join(self.model_dir, 'scaler.joblib'))
-
-    def detect_anomalies(self, features_df: pd.DataFrame, feature_columns: Optional[List[str]] = None, return_scores: bool = False) -> pd.DataFrame:
-        if feature_columns is None:
-            feature_columns = ['month_index', 'days_in_month', 'pct_share', 'weekend_ratio', 'roc_prev', 'budget_ratio', 'volatility_3m', 'amount']
-
-        X = features_df[feature_columns].values.astype(float)
-        X_scaled = self.scaler.transform(X)
-
-        results = features_df.copy().reset_index(drop=True)
-
-        # LOF scores
-        if self.lof is not None:
-            try:
-                lof_scores = self.lof.decision_function(X_scaled)
-            except Exception:
-                lof_scores = self.lof._decision_function(X_scaled)
-            results['lof_score'] = lof_scores
-            results['lof_anomaly'] = results['lof_score'] < np.percentile(results['lof_score'], 5)
-        else:
-            results['lof_score'] = np.nan
-            results['lof_anomaly'] = False
-
-        # OCSVM
-        if self.ocsvm is not None:
-            oc_scores = self.ocsvm.decision_function(X_scaled)
-            results['ocsvm_score'] = oc_scores
-            results['ocsvm_anomaly'] = results['ocsvm_score'] < np.percentile(results['ocsvm_score'], 5)
-        else:
-            results['ocsvm_score'] = np.nan
-            results['ocsvm_anomaly'] = False
-
-        # Autoencoder
-        if self.autoencoder is not None and _HAS_TORCH:
-            device = self.device or torch.device('cpu')
-            ae = self.autoencoder.to(device)
-            ae.eval()
-            with torch.no_grad():
-                X_tensor = torch.tensor(X_scaled, dtype=torch.float32).to(device)
-                recon = ae(X_tensor)
-                mse = torch.mean((recon - X_tensor) ** 2, dim=1).cpu().numpy()
-            results['ae_mse'] = mse
-            results['ae_anomaly'] = results['ae_mse'] > self.autoencoder_threshold
-        else:
-            results['ae_mse'] = np.nan
-            results['ae_anomaly'] = False
-
-        # Aggregate anomaly votes
-        results['anomaly_votes'] = results[['lof_anomaly', 'ocsvm_anomaly', 'ae_anomaly']].sum(axis=1)
-        results['is_anomaly'] = results['anomaly_votes'] >= 1  # flag if any model votes; tuneable
-
-        if return_scores:
-            return results
-        else:
-            return results[results['is_anomaly']].copy()
-
-    # --------------------- Regression per category ---------------------
-    def _prepare_regression_data(self, df: pd.DataFrame, n_lags: int = 3) -> pd.DataFrame:
-        """Build dataset with lag features for each category-month."""
-        df = df.copy()
-        df['date'] = pd.to_datetime(df['date'])
-        df['month'] = df['date'].dt.to_period('M').dt.to_timestamp()
-        grp = df.groupby(['month', 'category'])['amount'].sum().reset_index().sort_values(['category', 'month'])
-
-        # lag features
-        for lag in range(1, n_lags + 1):
-            grp[f'lag_{lag}'] = grp.groupby('category')['amount'].shift(lag).fillna(0.0)
-
-        grp['volatility_3m'] = grp.groupby('category')['amount'].rolling(window=3, min_periods=1).std().reset_index(level=0, drop=True).fillna(0.0)
-        grp['month_of_year'] = grp['month'].dt.month
-
-        return grp
-
-    def train_regressors(self, df: pd.DataFrame, budgets_df: Optional[pd.DataFrame] = None, n_lags: int = 3):
-        data = self._prepare_regression_data(df, n_lags=n_lags)
-        categories = data['category'].unique().tolist()
-
-        for cat in categories:
-            cat_df = data[data['category'] == cat].copy()
-            if len(cat_df) < 6:
-                # not enough history to train a regressor
-                continue
-
-            X = cat_df[[f'lag_{i}' for i in range(1, n_lags + 1)] + ['volatility_3m', 'month_of_year']]
-            y = cat_df['amount']
-
-            # include budget ratio if budgets provided
-            if budgets_df is not None:
-                budget_map = budgets_df.set_index('category')['amount'].to_dict()
-                cat_df['budget_amount'] = cat_df['category'].map(lambda c: budget_map.get(c, np.nan))
-                cat_df['budget_ratio'] = cat_df['lag_1'] / cat_df['budget_amount'].replace(0, np.nan)
-                X['budget_ratio'] = cat_df['budget_ratio'].fillna(0.0)
-
-            # train/test
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-            rf = RandomForestRegressor(n_estimators=200, random_state=42)
-            rf.fit(X_train, y_train)
-            score_rf = rf.score(X_test, y_test)
-
-            gb = GradientBoostingRegressor(n_estimators=200, random_state=42)
-            gb.fit(X_train, y_train)
-            score_gb = gb.score(X_test, y_test)
-
-            chosen = rf
-            chosen_name = 'RandomForest'
-            chosen_score = score_rf
-
-            if _HAS_XGBOOST:
-                try:
-                    xg = xgb.XGBRegressor(n_estimators=200, random_state=42, verbosity=0)
-                    xg.fit(X_train, y_train)
-                    score_xg = xg.score(X_test, y_test)
-                    if score_xg > chosen_score:
-                        chosen = xg
-                        chosen_name = 'XGBoost'
-                        chosen_score = score_xg
-                except Exception:
-                    pass
-
-            if score_gb > chosen_score:
-                chosen = gb
-                chosen_name = 'GradientBoosting'
-                chosen_score = score_gb
-
-            self.regressors[cat] = {
-                'model': chosen,
-                'model_name': chosen_name,
-                'score': chosen_score,
-                'features': X.columns.tolist()
-            }
-
-            joblib.dump(self.regressors[cat], os.path.join(self.model_dir, f'regressor_{cat}.joblib'))
-
-    def predict_next_month(self, df: pd.DataFrame, budgets_df: Optional[pd.DataFrame] = None, n_lags: int = 3) -> Dict[str, Dict]:
-        results = {}
-        data = self._prepare_regression_data(df, n_lags=n_lags)
-        if data.empty:
-            return results
-        latest_month = data['month'].max()
-        next_month = (latest_month + pd.offsets.MonthBegin(1)).to_timestamp()
-
-        for cat, meta in self.regressors.items():
-            features = meta['features']
-            cat_df = data[data['category'] == cat].sort_values('month')
-            if cat_df.empty:
-                continue
-            last = cat_df.iloc[-1]
-            X_row = []
-            for f in features:
-                if f.startswith('lag_'):
-                    lag_num = int(f.split('_')[1])
-                    if lag_num == 1:
-                        X_row.append(last['amount'])
-                    else:
-                        # try to pick previous values safely
-                        idx = -lag_num
-                        prev_val = cat_df.iloc[idx]['amount'] if len(cat_df) >= lag_num else 0.0
-                        X_row.append(prev_val)
-                elif f == 'volatility_3m':
-                    X_row.append(last['volatility_3m'])
-                elif f == 'month_of_year':
-                    X_row.append(next_month.month)
-                elif f == 'budget_ratio' and budgets_df is not None:
-                    budget_map = budgets_df.set_index('category')['amount'].to_dict()
-                    b = budget_map.get(cat, np.nan)
-                    X_row.append(last['amount'] / b if b and b > 0 else 0.0)
-                else:
-                    X_row.append(0.0)
-
-            X_arr = np.array(X_row).reshape(1, -1)
-            model = meta['model']
-            pred = float(model.predict(X_arr)[0])
-
-            conf = (max(0.0, pred - 0.2 * abs(pred)), pred + 0.2 * abs(pred))
-
-            results[cat] = {
-                'pred': pred,
-                'model': meta['model_name'],
-                'score': meta['score'],
-                'conf_int': conf
-            }
-
-        return results
-
-    # --------------------- Drift detection ---------------------
-    def _distribution_by_month(self, df: pd.DataFrame, month) -> pd.Series:
-        s = df[df['month'] == month].groupby('category')['amount'].sum()
-        s = s / s.sum()
-        return s
-
-    def compute_drift(self, df: pd.DataFrame, months_back: int = 1) -> Dict:
-        df = df.copy()
-        df['date'] = pd.to_datetime(df['date'])
-        df['month'] = df['date'].dt.to_period('M').dt.to_timestamp()
-        months = sorted(df['month'].unique())
-        if len(months) < 2:
-            return {'message': 'Not enough months to compute drift'}
-
-        curr = months[-1]
-        prev = months[-1 - months_back]
-        s_curr = self._distribution_by_month(df, curr)
-        s_prev = self._distribution_by_month(df, prev)
-
-        all_cats = sorted(set(s_curr.index).union(set(s_prev.index)))
-        p = np.array([s_curr.get(c, 0.0) for c in all_cats])
-        q = np.array([s_prev.get(c, 0.0) for c in all_cats])
-
-        js = float(jensenshannon(p + 1e-12, q + 1e-12))
-
-        eps = 1e-6
-        psi = ((p - q) * np.log((p + eps) / (q + eps))).tolist()
-        psi_map = dict(zip(all_cats, psi))
-
-        top = sorted(psi_map.items(), key=lambda x: -abs(x[1]))[:10]
-
-        report = {
-            'current_month': curr,
-            'previous_month': prev,
-            'jensen_shannon': js,
-            'top_psi_contributors': top
-        }
-        return report
-
-    # --------------------- Plotting helpers ---------------------
-    def plot_category_trend(self, df: pd.DataFrame, category: str, save_path: Optional[str] = None):
-        df2 = df.copy()
-        df2['date'] = pd.to_datetime(df2['date'])
-        df2['month'] = df2['date'].dt.to_period('M').dt.to_timestamp()
-        grp = df2[df2['category'] == category].groupby('month')['amount'].sum().reset_index()
-        plt.figure(figsize=(8, 4))
-        plt.plot(grp['month'], grp['amount'], marker='o')
-        plt.title(f'Spend Trend - {category}')
-        plt.ylabel('Amount')
-        plt.xlabel('Month')
-        plt.grid(True)
-        if save_path:
-            plt.savefig(save_path, bbox_inches='tight')
-        else:
-            plt.show()
-
-    def plot_heatmap_spend_vs_budget(self, df: pd.DataFrame, budgets_df: pd.DataFrame, save_path: Optional[str] = None):
-        df2 = df.copy()
-        df2['date'] = pd.to_datetime(df2['date'])
-        df2['month'] = df2['date'].dt.to_period('M').dt.to_timestamp()
-        pivot = df2.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0)
-        pivot_norm = pivot.div(pivot.sum(axis=1), axis=0)
-
-        plt.figure(figsize=(10, 6))
-        plt.imshow(pivot_norm.T, aspect='auto', interpolation='nearest')
-        plt.yticks(range(len(pivot.columns)), pivot.columns)
-        plt.xticks(range(len(pivot.index)), [m.strftime('%b-%Y') for m in pivot.index], rotation=45)
-        plt.title('Spend Share Heatmap (rows=category)')
-        plt.colorbar(label='Share')
-        if save_path:
-            plt.savefig(save_path, bbox_inches='tight')
-        else:
-            plt.show()
-
-    def plot_anomaly_scatter(self, features_df: pd.DataFrame, score_col: str = 'lof_score', save_path: Optional[str] = None):
-        feat_cols = ['month_index', 'days_in_month', 'pct_share', 'weekend_ratio', 'roc_prev', 'budget_ratio', 'volatility_3m', 'amount']
-        X = features_df[feat_cols].values
-        X_scaled = self.scaler.transform(X)
-        pca = PCA(n_components=2)
-        red = pca.fit_transform(X_scaled)
-        features_df = features_df.copy().reset_index(drop=True)
-        features_df['x'] = red[:, 0]
-        features_df['y'] = red[:, 1]
-
-        plt.figure(figsize=(8, 6))
-        plt.scatter(features_df['x'], features_df['y'], c=features_df[score_col], cmap='viridis', s=30)
-        if 'is_anomaly' in features_df.columns:
-            anomalies = features_df[features_df['is_anomaly']]
-            plt.scatter(anomalies['x'], anomalies['y'], facecolors='none', edgecolors='r', s=80, label='anomaly')
-            plt.legend()
-        plt.title('Anomaly Scatter (PCA reduced)')
-        if save_path:
-            plt.savefig(save_path, bbox_inches='tight')
-        else:
-            plt.show()
-
-    # --------------------- Adaptive retrain helpers ---------------------
-    def rolling_retrain(self, df: pd.DataFrame, budgets_df: Optional[pd.DataFrame] = None, window_months: int = 12):
-        df2 = df.copy()
-        df2['date'] = pd.to_datetime(df2['date'])
-        df2['month'] = df2['date'].dt.to_period('M').dt.to_timestamp()
-        last_month = df2['month'].max()
-        start = (last_month - pd.offsets.MonthBegin(window_months - 1)).to_timestamp()
-        window_df = df2[df2['month'] >= start]
-
-        features = self.build_features(window_df, budgets_df)
-        self.fit_unsupervised(features)
-        self.train_regressors(window_df, budgets_df)
-
-    # --------------------- Save / Load utilities ---------------------
-    def save_state(self):
-        # Save everything useful. Note: torch model saved separately already.
-        state = dict(self.__dict__)
-        # Remove non-picklable objects
-        state.pop('autoencoder', None)
-        state.pop('sentence_model', None)
-        joblib.dump(state, os.path.join(self.model_dir, 'finance_ml_state.joblib'))
-        # scaler and regressors/other models are saved elsewhere; ensure scaler is saved
-        joblib.dump(self.scaler, os.path.join(self.model_dir, 'scaler.joblib'))
-
-        # regressors already saved during training, but save dict reference as well
-        joblib.dump(self.regressors, os.path.join(self.model_dir, 'regressors_index.joblib'))
-
-    def load_state(self):
-        p = os.path.join(self.model_dir, 'finance_ml_state.joblib')
-        if os.path.exists(p):
-            loaded = joblib.load(p)
-            self.__dict__.update(loaded)
-            # reload scaler if present
-            scaler_p = os.path.join(self.model_dir, 'scaler.joblib')
-            if os.path.exists(scaler_p):
-                self.scaler = joblib.load(scaler_p)
-
-        # load regressors dict if exists
-        r_p = os.path.join(self.model_dir, 'regressors_index.joblib')
-        if os.path.exists(r_p):
-            self.regressors = joblib.load(r_p)
-
-        # load autoencoder if exists and torch available
-        ae_p = os.path.join(self.model_dir, 'autoencoder_pytorch.pt')
-        if _HAS_TORCH and os.path.exists(ae_p):
-            # need to know input dim to recreate model; try to infer from scaler if possible
-            try:
-                # scaler.mean_ shape gives feature dim
-                dim = int(getattr(self.scaler, 'mean_').shape[0])
-                encoding_dim = max(4, dim // 2)
-                ae = self._AE(dim, encoding_dim)
-                ae.load_state_dict(torch.load(ae_p, map_location=self.device or 'cpu'))
-                ae.eval()
-                self.autoencoder = ae
-                # autoencoder_threshold stored in state if saved previously
-                # if not, leave as None
-            except Exception:
-                # fallback: do not load autoencoder
-                self.autoencoder = None
-
-# ---------------------------------------------------------------------------
-# Procedural / script helper functions (your provided tail). Kept mostly as-is
-# ---------------------------------------------------------------------------
-
-from sklearn.ensemble import IsolationForest
-
+import json
+import pandas as pd
+from datetime import timedelta, datetime
+from pythonapi.ml_module import FinanceML
+
+# Function to convert and prepare data for analysis
 def prepare_data(aggregated_data, budget_data):
     df_aggregated = pd.DataFrame(aggregated_data)
     df_budget = pd.DataFrame(budget_data)
-
-    # Convert 'amount' columns to float if present
-    if 'amount' in df_aggregated.columns:
-        df_aggregated['amount'] = df_aggregated['amount'].astype(float)
-    else:
-        df_aggregated['amount'] = 0.0
-
-    if 'amount' in df_budget.columns:
-        df_budget['amount'] = df_budget['amount'].astype(float)
-    else:
-        df_budget['amount'] = 0.0
-
+    
     # Process date column and create month column
-    if 'date' in df_aggregated.columns:
-        df_aggregated['date'] = pd.to_datetime(df_aggregated['date']) + timedelta(days=1)
-    else:
-        df_aggregated['date'] = pd.to_datetime('today')
-
+    df_aggregated['date'] = pd.to_datetime(df_aggregated['date']) + timedelta(days=1)
     df_aggregated['month'] = df_aggregated['date'].dt.strftime('%b-%Y')
-
+    
     return df_aggregated, df_budget
 
+# Function to filter data by date range
 def filter_by_date(df_aggregated, from_date, to_date):
-    # from_date / to_date may be strings; attempt parse
-    try:
-        from_dt = pd.to_datetime(from_date)
-        to_dt = pd.to_datetime(to_date)
-    except Exception:
-        return df_aggregated
-    return df_aggregated[(df_aggregated['date'] >= from_dt) & (df_aggregated['date'] <= to_dt)]
+    return df_aggregated[(df_aggregated['date'] >= from_date) & (df_aggregated['date'] <= to_date)]
 
+# Function to group data by month and category
 def group_by_month_category(df_aggregated):
     try:
         month_category_data = df_aggregated.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0)
     except KeyError as e:
         print(f"Missing column in aggregated data: {e}", file=sys.stderr)
         month_category_data = pd.DataFrame()
+    
     return month_category_data
 
-def detect_anomalies_isolation_forest(df_aggregated):
-    anomalies = []
-    df_grouped = df_aggregated.groupby(['month', 'category'])['amount'].sum().reset_index()
-    if df_grouped.empty:
-        return anomalies
+# ML-based financial analysis using FinanceML module
+def analyze_with_ml(df_aggregated, df_budget):
+    """
+    Use FinanceML module for comprehensive financial analysis including:
+    - Anomaly detection (LOF, One-Class SVM, Autoencoder)
+    - Drift detection
+    - Spending predictions
+    - Category clustering
+    """
+    ml_insights = {
+        'anomalies': [],
+        'drift_report': None,
+        'predictions': None,
+        'category_clusters': None
+    }
+    
+    try:
+        # Convert Decimal types to float (from MongoDB)
+        df_aggregated_clean = df_aggregated.copy()
+        for col in df_aggregated_clean.columns:
+            if df_aggregated_clean[col].dtype == object:
+                try:
+                    df_aggregated_clean[col] = df_aggregated_clean[col].astype(float)
+                except (ValueError, TypeError):
+                    pass
+        
+        df_budget_clean = df_budget.copy()
+        for col in df_budget_clean.columns:
+            if df_budget_clean[col].dtype == object:
+                try:
+                    df_budget_clean[col] = df_budget_clean[col].astype(float)
+                except (ValueError, TypeError):
+                    pass
+        
+        # Initialize FinanceML
+        fm = FinanceML(model_dir='ml_models')
+        
+        # Build features from the data
+        features_df = fm.build_features(df_aggregated_clean, df_budget_clean)
+        
+        if features_df.empty:
+            return ml_insights
+        
+        # 1. Fit unsupervised anomaly detection models
+        fm.fit_unsupervised(features_df)
+        
+        # Detect anomalies
+        anomalies_df = fm.detect_anomalies(features_df, return_scores=True)
+        anomalies_df = anomalies_df[anomalies_df['is_anomaly']]
+        
+        for _, row in anomalies_df.iterrows():
+            ml_insights['anomalies'].append({
+                'month': row['month_str'],
+                'category': row['category'],
+                'amount': float(row['amount']),
+                'anomaly_votes': int(row['anomaly_votes']),
+                'lof_score': float(row['lof_score']) if pd.notna(row['lof_score']) else None,
+                'ocsvm_score': float(row['ocsvm_score']) if pd.notna(row['ocsvm_score']) else None,
+                'ae_mse': float(row['ae_mse']) if pd.notna(row['ae_mse']) else None
+            })
+        
+        # 2. Compute drift detection
+        ml_insights['drift_report'] = fm.compute_drift(df_aggregated_clean)
+        
+        # 3. Train regressors and predict next month
+        fm.train_regressors(df_aggregated_clean, df_budget_clean)
+        predictions = fm.predict_next_month(df_aggregated_clean, df_budget_clean)
+        
+        ml_insights['predictions'] = {
+            cat: {
+                'pred': float(data['pred']),
+                'model': data['model'],
+                'score': float(data['score']),
+                'conf_int': (float(data['conf_int'][0]), float(data['conf_int'][1]))
+            }
+            for cat, data in predictions.items()
+        }
+        
+        # 4. Semantic category clustering (optional)
+        try:
+            categories = df_aggregated_clean['category'].unique().tolist()
+            if len(categories) > 1:
+                fm.fit_category_embeddings(categories)
+                n_clusters = max(2, min(len(categories) // 3, 8))
+                clusters = fm.cluster_categories(n_clusters=n_clusters)
+                ml_insights['category_clusters'] = clusters
+        except Exception:
+            pass  # Category clustering is optional
+    
+    except Exception as e:
+        print(f"Warning: FinanceML analysis failed: {e}. Continuing with basic analysis.", file=sys.stderr)
+    
+    return ml_insights
 
-    df_grouped['month_num'] = pd.factorize(df_grouped['month'])[0]
-    df_grouped['category_num'] = pd.factorize(df_grouped['category'])[0]
-
-    X = df_grouped[['month_num', 'category_num', 'amount']]
-
-    iso = IsolationForest(n_estimators=200, contamination=0.1, max_samples='auto', random_state=42)
-    df_grouped['anomaly'] = iso.fit_predict(X)
-
-    anomalies_df = df_grouped[df_grouped['anomaly'] == -1]
-    for _, row in anomalies_df.iterrows():
-        anomalies.append({
-            'month': row['month'],
-            'category': row['category'],
-            'amount': row['amount']
-        })
-    return anomalies
-
+# Function to generate report for a single month
 def generate_month_report(month, categories, df_budget, report_lines):
     total_spent_in_month = categories.sum()
     report_lines.append(f"Month: {month}")
-
+    
     for category, amount in categories.items():
         budget_amount = df_budget.loc[df_budget['category'] == category, 'amount'].values
         budget_amount = budget_amount[0] if len(budget_amount) > 0 else None
@@ -763,87 +135,143 @@ def generate_month_report(month, categories, df_budget, report_lines):
         if budget_amount is not None and pd.notnull(budget_amount):
             if amount > budget_amount:
                 over_budget = amount - budget_amount
-                status = f"Over Budget by INR {over_budget:.2f} (Spent INR {amount:.2f} of INR {budget_amount:.2f})"
+                status = f"Over Budget by INR {over_budget:.2f} (Spent INR {amount:.2f} of INR {budget_amount:.2f}"
             else:
                 status = f"Within Budget (Spent INR {amount:.2f} of INR {budget_amount:.2f})"
         else:
             status = f"No budget set for this category. Spent INR {amount:.2f}"
-
+        
         report_lines.append(f"  Category: {category}, {status}")
 
     report_lines.append(f"Total Amount Spent in {month}: INR {total_spent_in_month:.2f}")
-    report_lines.append("")
+    report_lines.append("")  # Blank line for separation
 
+# Function to generate the full financial report
 def generate_report(df_budget, month_category_data, from_date, to_date, df_aggregated):
     report_lines = []
     report_lines.append(f"Report from {from_date} to {to_date}")
     report_lines.append(" ")
-
+    
     month_wise_spending = {}
     total_spending = 0
-    total_budget_current_month = df_budget['amount'].sum() if 'amount' in df_budget.columns else 0
+    total_budget_current_month = df_budget['amount'].sum()
     current_month = datetime.now().strftime('%b-%Y')
     total_spent_current_month = 0
 
+    # Generate report for each month
     if not month_category_data.empty:
         for month, categories in month_category_data.iterrows():
             generate_month_report(month, categories, df_budget, report_lines)
             month_wise_spending[month] = categories.sum()
 
+        # Only show current month budget if the current month is in the filtered data range
         if current_month in month_category_data.index:
             total_spent_current_month = month_category_data.loc[current_month].sum()
             amount_budget_left = total_budget_current_month - total_spent_current_month
-
+            
             report_lines.append(f"Total Budget for Current Month: INR {total_budget_current_month:.2f}")
             report_lines.append(f"Total Amount Spent in Current Month: INR {total_spent_current_month:.2f}")
             report_lines.append(f"Amount of Budget Left for Current Month ({current_month}): INR {amount_budget_left:.2f}")
-            report_lines.append("")
-
+            report_lines.append("")  # Blank line for separation
+        
         total_spending = month_category_data.sum().sum()
         report_lines.append(f"Total Amount Spent from {from_date} to {to_date}: INR {total_spending:.2f}")
         report_lines.append("")
 
-        ml_anomalies = detect_anomalies_isolation_forest(df_aggregated)
+        # ML-based comprehensive financial analysis
+        ml_insights = analyze_with_ml(df_aggregated, df_budget)
 
-        if ml_anomalies:
+        # Anomaly Detection Section
+        if ml_insights['anomalies']:
             report_lines.append("ML-based Anomaly Detection:")
-            for item in ml_anomalies:
+            for item in ml_insights['anomalies']:
                 report_lines.append(
-                    f"  • {item['month']} - Category: {item['category']} had unusual spending of INR {item['amount']:.2f}"
+                    f"  • {item['month']} - Category: {item['category']} had unusual spending of INR {item['amount']:.2f} (Votes: {item['anomaly_votes']})"
                 )
             report_lines.append("")
+        
+        # Drift Detection Section
+        if ml_insights['drift_report'] and 'message' not in ml_insights['drift_report']:
+            report_lines.append("Spending Pattern Drift Detection:")
+            drift = ml_insights['drift_report']
+            report_lines.append(f"  Jensen-Shannon Distance: {drift['jensen_shannon']:.4f}")
+            if drift['top_psi_contributors']:
+                report_lines.append("  Top Drifting Categories:")
+                for cat, psi in drift['top_psi_contributors'][:5]:
+                    report_lines.append(f"    - {cat}: PSI = {psi:.4f}")
+            report_lines.append("")
+        
+        # Spending Predictions Section
+        if ml_insights['predictions']:
+            report_lines.append("Next Month Spending Predictions:")
+            for cat, pred_data in ml_insights['predictions'].items():
+                low, high = pred_data['conf_int']
+                report_lines.append(
+                    f"  • {cat}: INR {pred_data['pred']:.2f} (Range: {low:.2f} - {high:.2f}) [Model: {pred_data['model']}]"
+                )
+            report_lines.append("")
+        
+        # Category Clustering Section
+        if ml_insights['category_clusters']:
+            report_lines.append("Semantic Category Clustering:")
+            clusters_by_group = {}
+            for cat, cluster_id in ml_insights['category_clusters'].items():
+                if cluster_id not in clusters_by_group:
+                    clusters_by_group[cluster_id] = []
+                clusters_by_group[cluster_id].append(cat)
+            for cluster_id in sorted(clusters_by_group.keys()):
+                report_lines.append(f"  Cluster {cluster_id}: {', '.join(clusters_by_group[cluster_id])}")
+            report_lines.append("")    
     else:
         report_lines.append("No financial data available for the given period.")
-
+    
     return report_lines
 
-def analyze_financial_data(budget_data, from_date, to_date, aggregated_data):
-    df_aggregated, df_budget = prepare_data(aggregated_data, budget_data)
-    df_aggregated = filter_by_date(df_aggregated, from_date, to_date)
-    month_category_data = group_by_month_category(df_aggregated)
-    return generate_report(df_budget, month_category_data, from_date, to_date, df_aggregated)
+# Main function to orchestrate the analysis
+def analyze_financial_data(budget_data, from_date, to_date, range_data, all_data):
+    # Prepare full history
+    df_all, df_budget = prepare_data(all_data, budget_data)
+
+    # Prepare range-filtered dataset
+    df_range, _ = prepare_data(range_data, budget_data)
+    df_range = filter_by_date(df_range, from_date, to_date)
+
+    # Group by month/category using only range data
+    month_category_data = group_by_month_category(df_range)
+    
+    return generate_report(
+        df_budget, 
+        month_category_data, 
+        from_date, 
+        to_date, 
+        df_all   
+    )       
 
 def main():
     try:
         input_data = json.load(sys.stdin)
-
+        
         budget_data = input_data.get('budgets', [])
         from_date = input_data.get('fromDate', '')
         to_date = input_data.get('toDate', '')
-        aggregated_data = input_data.get('aggregatedData', [])
-
-        report_lines = analyze_financial_data(budget_data, from_date, to_date, aggregated_data)
-
+        
+        range_data = input_data.get('rangeData', [])
+        all_data = input_data.get('allData', [])
+    
+        # Perform financial data analysis
+        report_lines = analyze_financial_data(budget_data, from_date, to_date, range_data, all_data)
+        
+        # Print the report
         if report_lines:
             for line in report_lines:
                 print(line)
         else:
-            print("No report generated.")
-
+            print("No report generated.")    
+        
     except json.JSONDecodeError:
         print("Invalid JSON data provided.", file=sys.stderr)
     except Exception as e:
         print(f"An error occurred: {e}", file=sys.stderr)
-
+   
 if __name__ == "__main__":
     main()

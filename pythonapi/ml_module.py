@@ -38,7 +38,7 @@ Usage (high-level):
 
 Dependencies:
     pandas, numpy, sklearn, matplotlib, scipy, joblib
-    Optional: xgboost, tensorflow (or keras), sentence_transformers
+    Optional: xgboost, torch, sentence_transformers
 
 The module is written defensively: optional libraries are imported lazily and the functions raise informative errors if missing.
 
@@ -80,14 +80,13 @@ except Exception:
     _HAS_SENTENCE_TRANSFORMERS = False
 
 try:
-    # Use tensorflow.keras for autoencoder
-    from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import Input, Dense
-    from tensorflow.keras.optimizers import Adam
-    from tensorflow.keras.callbacks import EarlyStopping
-    _HAS_TF = True
+    import torch
+    import torch.nn as nn
+    from torch.optim import Adam as TorchAdam
+    from torch.utils.data import TensorDataset, DataLoader
+    _HAS_TORCH = True
 except Exception:
-    _HAS_TF = False
+    _HAS_TORCH = False
 
 
 class FinanceML:
@@ -101,6 +100,7 @@ class FinanceML:
         self.ocsvm = None
         self.autoencoder = None
         self.autoencoder_threshold = None
+        self.autoencoder_device = None
 
         # regressors per (normalized) category
         self.regressors = {}
@@ -176,8 +176,9 @@ class FinanceML:
         grp = grp.merge(total_month, on='month', how='left')
         grp['pct_share'] = grp['amount'] / grp['month_total']
 
-        # Month index (numeric)
-        grp['month_index'] = ((grp['month'] - grp['month'].min()) / np.timedelta64(1, 'M')).astype(int)
+        # Month index (numeric) - calculate as difference in months between each date and the minimum date
+        min_month = grp['month'].min()
+        grp['month_index'] = grp['month'].apply(lambda x: (x.year - min_month.year) * 12 + (x.month - min_month.month)).astype(int)
 
         # Days in month
         grp['days_in_month'] = grp['month'].dt.daysinmonth
@@ -244,33 +245,84 @@ class FinanceML:
         joblib.dump(oc, os.path.join(self.model_dir, 'ocsvm.joblib'))
 
         # Autoencoder (optional)
-        if _HAS_TF:
+        if _HAS_TORCH:
             dim = X_scaled.shape[1]
             encoding_dim = max(4, dim // 2)
-            inp = Input(shape=(dim,))
-            x = Dense(encoding_dim * 2, activation='relu')(inp)
-            x = Dense(encoding_dim, activation='relu')(x)
-            x = Dense(encoding_dim * 2, activation='relu')(x)
-            out = Dense(dim, activation='linear')(x)
-            ae = Model(inp, out)
-            ae.compile(optimizer=Adam(learning_rate=0.001), loss='mse')
-
+            
+            # Define PyTorch autoencoder
+            class Autoencoder(nn.Module):
+                def __init__(self, input_dim, encoding_dim):
+                    super(Autoencoder, self).__init__()
+                    self.encoder = nn.Sequential(
+                        nn.Linear(input_dim, encoding_dim * 2),
+                        nn.ReLU(),
+                        nn.Linear(encoding_dim * 2, encoding_dim),
+                        nn.ReLU()
+                    )
+                    self.decoder = nn.Sequential(
+                        nn.Linear(encoding_dim, encoding_dim * 2),
+                        nn.ReLU(),
+                        nn.Linear(encoding_dim * 2, input_dim)
+                    )
+                
+                def forward(self, x):
+                    encoded = self.encoder(x)
+                    decoded = self.decoder(encoded)
+                    return decoded
+            
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            ae = Autoencoder(dim, encoding_dim).to(device)
+            optimizer = TorchAdam(ae.parameters(), lr=0.001)
+            criterion = nn.MSELoss()
+            
+            # Convert data to tensor
+            X_tensor = torch.FloatTensor(X_scaled).to(device)
+            dataset = TensorDataset(X_tensor)
+            dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+            
             # Train with early stopping
-            es = EarlyStopping(monitor='loss', patience=10, restore_best_weights=True)
-            ae.fit(X_scaled, X_scaled, epochs=200, batch_size=32, callbacks=[es], verbose=0)
+            best_loss = float('inf')
+            patience_counter = 0
+            patience = 10
+            
+            for epoch in range(200):
+                epoch_loss = 0.0
+                for batch in dataloader:
+                    X_batch = batch[0]
+                    optimizer.zero_grad()
+                    recon = ae(X_batch)
+                    loss = criterion(recon, X_batch)
+                    loss.backward()
+                    optimizer.step()
+                    epoch_loss += loss.item()
+                
+                epoch_loss /= len(dataloader)
+                
+                if epoch_loss < best_loss:
+                    best_loss = epoch_loss
+                    patience_counter = 0
+                else:
+                    patience_counter += 1
+                    if patience_counter >= patience:
+                        break
+            
             self.autoencoder = ae
-
+            
             # compute reconstruction errors and threshold (mean + 3*std)
-            recon = ae.predict(X_scaled)
-            mse = np.mean(np.square(recon - X_scaled), axis=1)
+            ae.eval()
+            with torch.no_grad():
+                recon = ae(X_tensor)
+                mse = torch.mean((recon - X_tensor) ** 2, dim=1).cpu().numpy()
             thresh = np.mean(mse) + 3 * np.std(mse)
             self.autoencoder_threshold = float(thresh)
-
+            self.autoencoder_device = device
+            
             # Save
-            ae.save(os.path.join(self.model_dir, 'autoencoder_tf'))
+            torch.save(ae.state_dict(), os.path.join(self.model_dir, 'autoencoder_pytorch.pth'))
         else:
             self.autoencoder = None
             self.autoencoder_threshold = None
+            self.autoencoder_device = None
 
         # Save scaler
         joblib.dump(self.scaler, os.path.join(self.model_dir, 'scaler.joblib'))
@@ -307,8 +359,11 @@ class FinanceML:
 
         # Autoencoder
         if self.autoencoder is not None:
-            recon = self.autoencoder.predict(X_scaled)
-            mse = np.mean(np.square(recon - X_scaled), axis=1)
+            self.autoencoder.eval()
+            with torch.no_grad():
+                X_tensor = torch.FloatTensor(X_scaled).to(self.autoencoder_device)
+                recon = self.autoencoder(X_tensor)
+                mse = torch.mean((recon - X_tensor) ** 2, dim=1).cpu().numpy()
             results['ae_mse'] = mse
             results['ae_anomaly'] = results['ae_mse'] > self.autoencoder_threshold
         else:
@@ -330,8 +385,12 @@ class FinanceML:
         """Build dataset with lag features for each category-month. Returns a table with one row per month-category and lag features."""
         df = df.copy()
         df['date'] = pd.to_datetime(df['date'])
-        df['month'] = df['date'].dt.to_period('M').dt.to_timestamp()
+        # Use a consistent month representation
+        df['month'] = df['date'].dt.to_period('M')
         grp = df.groupby(['month', 'category'])['amount'].sum().reset_index().sort_values(['category', 'month'])
+        
+        # Convert period back to timestamp for consistency
+        grp['month'] = grp['month'].dt.to_timestamp()
 
         # create lag features
         for lag in range(1, n_lags + 1):
@@ -415,8 +474,13 @@ class FinanceML:
         """
         results = {}
         data = self._prepare_regression_data(df, n_lags=n_lags)
+        
+        if data.empty:
+            return results
+        
         latest_month = data['month'].max()
-        next_month = (latest_month + pd.offsets.MonthBegin(1)).to_timestamp()
+        # Calculate next month by adding one month
+        next_month = latest_month + pd.DateOffset(months=1)
 
         for cat, meta in self.regressors.items():
             features = meta['features']
@@ -438,7 +502,7 @@ class FinanceML:
                 elif f == 'volatility_3m':
                     X_row.append(last['volatility_3m'])
                 elif f == 'month_of_year':
-                    X_row.append(((next_month).month))
+                    X_row.append(next_month.month)
                 elif f == 'budget_ratio' and budgets_df is not None:
                     budget_map = budgets_df.set_index('category')['amount'].to_dict()
                     b = budget_map.get(cat, np.nan)
@@ -574,9 +638,11 @@ class FinanceML:
         """Perform retraining on a rolling last-N months window. Useful for scheduled retrain jobs."""
         df2 = df.copy()
         df2['date'] = pd.to_datetime(df2['date'])
-        df2['month'] = df2['date'].dt.to_period('M').dt.to_timestamp()
+        df2['month'] = df2['date'].dt.to_period('M')
         last_month = df2['month'].max()
-        start = (last_month - pd.offsets.MonthBegin(window_months - 1)).to_timestamp()
+        start_period = last_month - (window_months - 1)
+        start = start_period.to_timestamp()
+        df2['month'] = df2['month'].dt.to_timestamp()
         window_df = df2[df2['month'] >= start]
 
         features = self.build_features(window_df, budgets_df)
@@ -596,5 +662,3 @@ class FinanceML:
             scaler_p = os.path.join(self.model_dir, 'scaler.joblib')
             if os.path.exists(scaler_p):
                 self.scaler = joblib.load(scaler_p)
-
-
