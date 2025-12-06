@@ -1,5 +1,4 @@
 import sys
-import json
 import pandas as pd
 from datetime import timedelta, datetime
 from pythonapi.ml_module import FinanceML
@@ -46,7 +45,7 @@ def analyze_with_ml(df_aggregated, df_budget):
     }
     
     try:
-        # Convert Decimal types to float (from MongoDB)
+        # Convert Decimal types to float
         df_aggregated_clean = df_aggregated.copy()
         for col in df_aggregated_clean.columns:
             if df_aggregated_clean[col].dtype == object:
@@ -246,32 +245,3 @@ def analyze_financial_data(budget_data, from_date, to_date, range_data, all_data
         to_date, 
         df_all   
     )       
-
-def main():
-    try:
-        input_data = json.load(sys.stdin)
-        
-        budget_data = input_data.get('budgets', [])
-        from_date = input_data.get('fromDate', '')
-        to_date = input_data.get('toDate', '')
-        
-        range_data = input_data.get('rangeData', [])
-        all_data = input_data.get('allData', [])
-    
-        # Perform financial data analysis
-        report_lines = analyze_financial_data(budget_data, from_date, to_date, range_data, all_data)
-        
-        # Print the report
-        if report_lines:
-            for line in report_lines:
-                print(line)
-        else:
-            print("No report generated.")    
-        
-    except json.JSONDecodeError:
-        print("Invalid JSON data provided.", file=sys.stderr)
-    except Exception as e:
-        print(f"An error occurred: {e}", file=sys.stderr)
-   
-if __name__ == "__main__":
-    main()

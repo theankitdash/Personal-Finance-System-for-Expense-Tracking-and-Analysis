@@ -44,15 +44,11 @@ The module is written defensively: optional libraries are imported lazily and th
 
 """
 
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 import os
-import math
-import json
 import joblib
 import numpy as np
 import pandas as pd
-from datetime import datetime
-from collections import defaultdict
 
 # sklearn / scipy
 from sklearn.preprocessing import StandardScaler
@@ -63,7 +59,6 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from scipy.spatial.distance import jensenshannon
-from scipy import stats
 import matplotlib.pyplot as plt
 
 # Optional imports (lazy failures with instructions)
@@ -414,15 +409,16 @@ class FinanceML:
                 # not enough history to train a regressor
                 continue
 
-            X = cat_df[[f'lag_{i}' for i in range(1, n_lags + 1)] + ['volatility_3m', 'month_of_year']]
-            y = cat_df['amount']
+            feature_cols = [f'lag_{i}' for i in range(1, n_lags + 1)] + ['volatility_3m', 'month_of_year']
+            X = cat_df[feature_cols].copy()
+            y = cat_df['amount'].copy()
 
             # include budget ratio if budgets provided
             if budgets_df is not None:
                 budget_map = budgets_df.set_index('category')['amount'].to_dict()
-                cat_df['budget_amount'] = cat_df['category'].map(lambda c: budget_map.get(c, np.nan))
-                cat_df['budget_ratio'] = cat_df['lag_1'] / cat_df['budget_amount'].replace(0, np.nan)
-                X['budget_ratio'] = cat_df['budget_ratio'].fillna(0.0)
+                budget_amounts = cat_df['category'].map(lambda c: budget_map.get(c, np.nan))
+                budget_ratio = cat_df['lag_1'] / budget_amounts.replace(0, np.nan)
+                X.loc[:, 'budget_ratio'] = budget_ratio.fillna(0.0)
 
             # train/test
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -510,7 +506,8 @@ class FinanceML:
                 else:
                     X_row.append(0.0)
 
-            X_arr = np.array(X_row).reshape(1, -1)
+            # Create DataFrame with feature names to match training
+            X_arr = pd.DataFrame([X_row], columns=features)
             model = meta['model']
             pred = float(model.predict(X_arr)[0])
 
