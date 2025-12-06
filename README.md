@@ -1,22 +1,28 @@
 # Personal Finance System for Expense Tracking and Analysis
 
-A containerized financial analytics platform that utilizes the Isolation Forest algorithm to detect anomalies with 80% precision across 10,000+ transactions. The system employs REST APIs for data retrieval and visualization, offering a response time of approximately 2.5 seconds.
+A containerized financial analytics engine that performs multivariate anomaly detection using LOF, One-Class SVM, and a deep-learning autoencoder—delivering high-precision identification of irregular spending patterns across large transaction datasets. The platform exposes clean REST APIs for ingestion, forecasting, drift analysis, semantic category clustering, and visual diagnostics, with typical response times around 2–3 seconds even at 10,000+ records.
 
 ## Features
 
-* **Anomaly Detection**: Applies Isolation Forest to identify outliers in financial transactions.
-* **RESTful APIs**: Facilitates seamless data retrieval and interaction.
-* **Data Visualization**: Presents financial data through intuitive charts and graphs.
-* **Containerization**: Utilizes Docker for consistent and scalable deployment.
+* **Multivariate Anomaly Detection**: Detects irregular spending patterns using LOF, One-Class SVM, and a deep-learning autoencoder.
+
+* **Forecasting & Drift Analysis**: Predicts category-level expenses and measures data drift using JSD and divergence metrics.
+
+* **Semantic Category Clustering**: Generates sentence-transformer embeddings to group similar expense categories.
+
+* **RESTful APIs**: Provides unified endpoints for ingestion, analytics, and visualization.
+
+* **Containerized Deployment**: Uses Docker for reproducible, scalable execution across environments.
+
+* **Interactive Visualizations**: Offers trend charts, heatmaps, anomaly plots, and category insights.
 
 ## Tech Stack
 
-* **Backend**: FastAPI
-* **Data Analysis**: Python (scikit-learn)
-* **Containerization**: Docker & Docker Compose
-* **API Framework**: FastAPI (Python)
+* **Backend**: FastAPI (Python)
+* **Data Analysis/ML**: Python, scikit-learn, PyTorch, XGBoost (optional), sentence-transformers
 * **Frontend**: Node.js
 * **Database**: PostgreSQL
+* **Containerization**: Docker & Docker Compose
 
 ## Getting Started
 
@@ -42,14 +48,8 @@ A containerized financial analytics platform that utilizes the Isolation Forest 
 ```
 Personal-Finance-System-for-Expense-Tracking-and-Analysis/
 │
-├── node-backend/       # Backend services (Node.js)
-├── pythonapi/          # Python-based anomaly detection and analysis
+├── node-backend/       # Front-end services (Node.js)
+├── pythonapi/          # Backend Services (FastAPI: Python with ML Analysis)
 ├── .gitignore          # Git ignore file
 └── docker-compose.yml  # Docker Compose configuration
 ```
-
-* financial-data
-* finance-management
-* anomaly-detection
-* fastapi
-* expense-analysis
