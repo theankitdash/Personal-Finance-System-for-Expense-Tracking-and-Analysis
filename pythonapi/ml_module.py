@@ -1,8 +1,5 @@
 """
-ml_finance_module.py
-
-A modular ML toolkit for the financial analysis script you provided.
-- Places ML detection / forecasting / clustering in a separate file.
+A modular ML toolkit.
 - Features included:
   1) Multivariate unsupervised anomaly detection: LOF, One-Class SVM, Autoencoder
   2) Category-level regression models: RandomForest, GradientBoosting, XGBoost (optional)
@@ -10,37 +7,6 @@ A modular ML toolkit for the financial analysis script you provided.
   4) Drift detection (Jensen-Shannon divergence & PSI)
   5) Plotting helpers for trends, heatmaps, and anomaly scatter charts
   6) Lightweight adaptive retrain scheduler (rolling-window retraining helpers)
-
-Usage (high-level):
-    from ml_finance_module import FinanceML
-
-    fm = FinanceML()
-    fm.fit_category_embeddings(categories_list)
-    clustered = fm.cluster_categories(n_clusters=12)
-
-    # Prepare aggregated dataframe with columns ['date','category','amount']
-    df = your_df
-    features_df = fm.build_features(df, budgets_df)
-
-    # Train anomaly detectors
-    fm.fit_unsupervised(features_df)
-    anomalies = fm.detect_anomalies(features_df)
-
-    # Train regressors per category
-    fm.train_regressors(df, budgets_df)
-    preds = fm.predict_next_month(df, budgets_df)
-
-    # Drift detection
-    drift_report = fm.compute_drift(df)
-
-    # Plots
-    fm.plot_category_trend(df, 'Food')
-
-Dependencies:
-    pandas, numpy, sklearn, matplotlib, scipy, joblib
-    Optional: xgboost, torch, sentence_transformers
-
-The module is written defensively: optional libraries are imported lazily and the functions raise informative errors if missing.
 
 """
 
