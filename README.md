@@ -48,8 +48,8 @@ A containerized financial analytics engine that performs multivariate anomaly de
 ```
 Personal-Finance-System-for-Expense-Tracking-and-Analysis/
 │
-├── node-backend/       # Front-end services (Node.js)
-├── pythonapi/          # Backend Services (FastAPI: Python with ML Analysis)
+├── node-backend/       # Backend services (Node.js)
+├── pythonapi/          # ML Analysis (FastAPI: Python)
 ├── .gitignore          # Git ignore file
 └── docker-compose.yml  # Docker Compose configuration
 ```
