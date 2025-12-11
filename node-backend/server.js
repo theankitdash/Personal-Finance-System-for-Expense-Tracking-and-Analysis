@@ -398,7 +398,7 @@ app.post('/analyzeFinancialData', async (req, res) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Cookie: req.headers.cookie  // Forward the session & JWT cookies
+                Cookie: req.headers.cookie  
             },
             body: JSON.stringify({ fromDate, toDate })
         });
@@ -407,8 +407,24 @@ app.post('/analyzeFinancialData', async (req, res) => {
             return res.status(response.status).json({ error: 'Python API error' });
         }
 
-        const data = await response.json(); // FastAPI returns JSON { report: "..." }
-        res.send(data.report);
+        // Convert the Python stream to a Node buffer
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Prepare correct file headers
+        const filename = `analysis_${fromDate}_to_${toDate}.xlsx`;
+
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${filename}"`
+        );
+
+        // Send the Excel file
+        res.send(buffer);
 
     } catch (err) {
         console.error(err);
@@ -452,6 +468,5 @@ app.get('/logout', (req, res) => {
 app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
 });
-
 
 // Run with command: npx nodemon node-backend/server.js

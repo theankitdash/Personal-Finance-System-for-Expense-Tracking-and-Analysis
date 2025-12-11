@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Cookie, HTTPException
+from fastapi.responses import StreamingResponse
 import jwt
 from datetime import datetime
 from .config_db import config, get_db_connection
 from .models import AnalyzeRequest
 from .analysis import analyze_financial_data
+from .excel_gen import create_excel
+import io
 
 router = APIRouter()
 
@@ -44,14 +47,17 @@ async def analyze(data: AnalyzeRequest, auth_token: str = Cookie(None)):
 
     await conn.close()
 
-    report = analyze_financial_data(
-        budgets,
-        data.fromDate,
-        data.toDate,
-        range_expenses,
-        all_expenses
-    )
-
+    report = analyze_financial_data(budgets, data.fromDate, data.toDate, range_expenses, all_expenses)
     print(report)
-    return report
 
+    excel_buffer = create_excel(report)
+
+    excel_buffer.seek(0)
+
+    return StreamingResponse(
+        excel_buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename=analysis_{from_date}_to_{to_date}.xlsx"
+        }
+    )

@@ -45,20 +45,28 @@ async function analyzeExpenses(fromDate, toDate) {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to fetch analysis results');
+            throw new Error('Failed to generate Excel Report');
         }
 
-        const result = await response.text();
-        updateAnalysisResults(result);
+        // Convert response to blob
+        const blob = await response.blob();
+
+        // Create downloadable link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+
+        a.href = url;
+        a.download = `analysis_${fromDate}_to_${toDate}.xlsx`;
+        a.style.display = 'none';
+
+        document.body.appendChild(a);
+        a.click();
+
+        window.URL.revokeObjectURL(url);
+        a.remove();
 
     } catch (error) {
-        console.error('Error fetching analysis results:', error);
-        alert('An error occurred while fetching analysis results.');
+        console.error('Error downloading Excel:', error);
+        alert('An error occurred while downloading the Excel file.');
     }
-}
-
-function updateAnalysisResults(data) {
-    const analysisResultsDiv = document.getElementById('analysis-results');
-    analysisResultsDiv.textContent = data;
-    document.getElementById('analysis-container').style.display = 'block';
 }

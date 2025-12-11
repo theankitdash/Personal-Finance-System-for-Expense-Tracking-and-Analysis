@@ -75,38 +75,6 @@ header {
   padding: 10px;
 }
 
-#graph-container {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: auto;
-  max-height: 500px;
-  overflow: hidden;
-}
-
-#graph {
-  max-width: 100%;
-  height: auto;
-}
-
-
-#analysis-container {
-  display: none;
-  margin-top: 20px;
-}
-
-#analysis-results {
-  white-space: pre-wrap;
-  background: #f9f9f9;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  max-height: 500px; 
-  max-width: 100%;
-  overflow-y: auto;
-}
-
 #loading-indicator {
   display: none;
   justify-content: center;
@@ -157,8 +125,5 @@ header {
 @media (max-width: 768px) {
   .analysis-content {
     padding: 10px;
-  }
-  #analysis-container {
-    margin-top: 15px;
   }
 }
