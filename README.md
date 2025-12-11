@@ -18,9 +18,9 @@ A containerized financial analytics engine that performs multivariate anomaly de
 
 ## Tech Stack
 
-* **Backend**: FastAPI (Python)
-* **Data Analysis/ML**: Python, scikit-learn, PyTorch, XGBoost (optional), sentence-transformers
-* **Frontend**: Node.js
+* **Backend**: Node.js
+* **API Analysis**: FastAPI (Python)
+* **ML frameworks**: Scikit-learn, PyTorch, XGBoost, sentence-transformers
 * **Database**: PostgreSQL
 * **Containerization**: Docker & Docker Compose
 
