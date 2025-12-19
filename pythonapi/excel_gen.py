@@ -10,7 +10,7 @@ def create_excel(result):
 
     anomalies_df = pd.DataFrame(result['ml_insights']['anomalies'])
     predictions_df = pd.DataFrame([
-        {'category': k, **v} for k, v in result['ml_insights']['predictions'].items()
+        {'category': k, **v} for k, v in result['ml_insights']['predictions']['items'].items()
     ])
 
     clusters_df = pd.DataFrame([
