@@ -18,9 +18,9 @@ A containerized financial analytics engine that performs multivariate anomaly de
 
 ## Tech Stack
 
-* **Backend**: FastAPI (Python)
-* **Data Analysis/ML**: Python, scikit-learn, PyTorch, XGBoost (optional), sentence-transformers
-* **Frontend**: Node.js
+* **Backend**: Node.js
+* **API Analysis**: FastAPI (Python)
+* **ML frameworks**: Scikit-learn, PyTorch, XGBoost, sentence-transformers
 * **Database**: PostgreSQL
 * **Containerization**: Docker & Docker Compose
 
@@ -48,8 +48,8 @@ A containerized financial analytics engine that performs multivariate anomaly de
 ```
 Personal-Finance-System-for-Expense-Tracking-and-Analysis/
 │
-├── node-backend/       # Front-end services (Node.js)
-├── pythonapi/          # Backend Services (FastAPI: Python with ML Analysis)
+├── node-backend/       # Backend services (Node.js)
+├── pythonapi/          # ML Analysis (FastAPI: Python)
 ├── .gitignore          # Git ignore file
 └── docker-compose.yml  # Docker Compose configuration
 ```
