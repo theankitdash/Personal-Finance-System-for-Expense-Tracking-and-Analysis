@@ -72,6 +72,7 @@ class FinanceML:
         self.cluster_labels = None
         self.cluster_model = None
         self.sentence_model = None
+        self.embedding_source = None  # 'category' or 'description'
 
     # --------------------- Category embeddings & clustering ---------------------
     def ensure_sentence_model(self, model_name: str = 'all-MiniLM-L6-v2'):
@@ -81,11 +82,31 @@ class FinanceML:
             self.sentence_model = SentenceTransformer(model_name)
         return self.sentence_model
 
-    def fit_category_embeddings(self, categories: List[str], model_name: str = 'all-MiniLM-L6-v2') -> pd.DataFrame:
-        """Compute sentence embeddings for category names and store mapping."""
+    def fit_category_embeddings(self, categories: List[str], descriptions: Optional[List[str]] = None, model_name: str = 'all-MiniLM-L6-v2') -> pd.DataFrame:
+        """Compute sentence embeddings for category names or descriptions and store mapping.
+        If descriptions are provided, they will be used for embeddings (more semantic).
+        Otherwise, category names are used.
+        
+        Args:
+            categories: List of category names
+            descriptions: Optional list of descriptions (one per category). If provided, these are used for embeddings.
+            model_name: Sentence transformer model name
+            
+        Returns:
+            DataFrame with embeddings indexed by category name
+        """
         model = self.ensure_sentence_model(model_name)
         cats = [str(c) for c in categories]
-        vecs = model.encode(cats, show_progress_bar=False)
+        
+        # Use descriptions for embeddings if provided, otherwise use category names
+        if descriptions is not None:
+            texts = [str(d) for d in descriptions]
+            self.embedding_source = 'description'
+        else:
+            texts = cats
+            self.embedding_source = 'category'
+        
+        vecs = model.encode(texts, show_progress_bar=False)
         df = pd.DataFrame(vecs, index=cats)
         self.category_embeddings = df
         self.cat_to_vec = {c: vecs[i] for i, c in enumerate(cats)}
@@ -109,13 +130,26 @@ class FinanceML:
     def get_cluster_for_category(self, category: str):
         return self.cluster_labels.get(category)
 
-    def merge_semantic_categories(self, df: pd.DataFrame, how: str = 'cluster') -> pd.DataFrame:
+    def merge_semantic_categories(self, df: pd.DataFrame, how: str = 'cluster', use_column: str = None) -> pd.DataFrame:
         """Return a copy of df with a new column 'semantic_category' using cluster labels.
-        df must have a column 'category'."""
+        df must have a 'category' column (and optionally a 'description' column).
+        
+        Args:
+            df: DataFrame with 'category' column (and optional 'description')
+            how: Clustering method used (currently only 'cluster' supported)
+            use_column: if None, auto-detects based on embedding source; can be 'category' or 'description'
+            
+        Returns:
+            DataFrame with added 'semantic_category' column
+        """
         if self.cluster_labels is None:
             raise ValueError('Run fit_category_embeddings() and cluster_categories() first')
+        
         df2 = df.copy()
+        
+        # Always map via category (cluster_labels is keyed by category name)
         df2['semantic_category'] = df2['category'].map(lambda c: f'cluster_{self.cluster_labels.get(c, -1)}')
+        
         return df2
 
     # --------------------- Feature engineering ---------------------
