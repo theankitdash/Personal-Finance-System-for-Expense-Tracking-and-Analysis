@@ -45,18 +45,12 @@ def group_by_month_category(df_expenses):
 
 # ML-based financial analysis using FinanceML module
 def analyze_with_ml(df_expenses, df_budget):
-    """
-    Use FinanceML module for comprehensive financial analysis including:
-    - Anomaly detection (LOF, One-Class SVM, Autoencoder)
-    - Drift detection
-    - Spending predictions
-    - Category clustering
-    """
+    
     ml_insights = {
         'anomalies': [],
         'drift_report': None,
         'predictions': {},
-        'category_clusters': {}
+        'description_clustering': {}
     }
     
     try:
@@ -130,21 +124,39 @@ def analyze_with_ml(df_expenses, df_budget):
                 'accuracy_label': _get_accuracy_label(pred_data['score'])
             }
         
-        # 4. Semantic category clustering (optional)
+        # 4. Semantic description clustering 
         try:
-            categories = df_aggregated_clean['category'].unique().tolist()
-            if len(categories) > 1:
-                fm.fit_category_embeddings(categories)
-                n_clusters = max(2, min(len(categories) // 3, 8))
-                clusters = fm.cluster_categories(n_clusters=n_clusters)
+            descriptions = (df_aggregated_clean['description'].dropna().astype(str).unique().tolist()
+                            )
+            if len(descriptions) > 1:
+                # Step 1: Embed descriptions
+                fm.fit_description_embeddings(descriptions)
+
+                # Step 2: Choose cluster count
+                n = len(descriptions)
+                if n <= 5:
+                    n_clusters = 2
+                elif n <= 10:
+                    n_clusters = 3
+                else:
+                    n_clusters = max(3, min(n // 3, 8))
+
+                # Step 3: KMeans clustering
+                clusters = fm.cluster_descriptions_kmeans(
+                    n_clusters=n_clusters
+                )
+
+                # Step 4: Group results
                 clusters_by_group = {}
-                for cat, cluster_id in clusters.items():
-                    if cluster_id not in clusters_by_group:
-                        clusters_by_group[cluster_id] = []
-                    clusters_by_group[cluster_id].append(cat)
-                ml_insights['category_clusters'] = {f'group_{cid + 1}': cats for cid, cats in clusters_by_group.items()}
+                for desc, cid in clusters.items():
+                    clusters_by_group.setdefault(cid, []).append(desc)
+
+                ml_insights['description_clusters'] = {
+                    f'group_{cid + 1}': descs
+                    for cid, descs in clusters_by_group.items()
+                }
         except Exception as e:
-            pass  # Category clustering is optional
+            print("Description clustering failed:", e) 
     
     except Exception as e:
         print(f"Warning: FinanceML analysis failed: {e}. Continuing with basic analysis.", file=sys.stderr)
@@ -322,7 +334,7 @@ def analyze_financial_data(budget_data, from_date, to_date, range_data, all_data
                     'items': ml_insights['predictions'],
                     'description': "Next month spending predictions for each category" if ml_insights['predictions'] else "Unable to generate predictions"
                 },
-                'category_clustering': ml_insights['category_clusters']
+                'description_clustering': ml_insights.get('description_clusters', {})
             }
         }
     

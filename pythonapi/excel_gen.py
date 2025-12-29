@@ -14,8 +14,8 @@ def create_excel(result):
     ])
 
     clusters_df = pd.DataFrame([
-        {'cluster': cid, 'categories': ", ".join(cats)}
-        for cid, cats in result['ml_insights']['category_clustering'].items()
+        {'cluster': cid, 'descriptions': ", ".join(desc)}
+        for cid, desc in result['ml_insights']['description_clustering'].items()
     ])
 
     # Write to Excel inside memory buffer

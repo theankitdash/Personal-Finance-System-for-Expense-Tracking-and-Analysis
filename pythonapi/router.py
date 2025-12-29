@@ -48,7 +48,7 @@ async def analyze(data: AnalyzeRequest, auth_token: str = Cookie(None)):
     await conn.close()
 
     report = analyze_financial_data(budgets, data.fromDate, data.toDate, range_expenses, all_expenses)
-    print(report)
+    #print(report)
 
     excel_buffer = create_excel(report)
 

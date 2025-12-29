@@ -27,7 +27,6 @@ from sklearn.model_selection import train_test_split
 from scipy.spatial.distance import jensenshannon
 import matplotlib.pyplot as plt
 
-# Optional imports (lazy failures with instructions)
 try:
     import xgboost as xgb
     _HAS_XGBOOST = True
@@ -67,14 +66,12 @@ class FinanceML:
         self.regressors = {}
 
         # embeddings
-        self.category_embeddings = None
-        self.cat_to_vec = {}
+        self.description_embeddings = None
         self.cluster_labels = None
         self.cluster_model = None
         self.sentence_model = None
-        self.embedding_source = None  # 'category' or 'description'
 
-    # --------------------- Category embeddings & clustering ---------------------
+    # --------------------- Description embeddings & clustering ---------------------
     def ensure_sentence_model(self, model_name: str = 'all-MiniLM-L6-v2'):
         if not _HAS_SENTENCE_TRANSFORMERS:
             raise ImportError("sentence-transformers is required for semantic category embeddings. Install with: pip install sentence-transformers")
@@ -82,73 +79,45 @@ class FinanceML:
             self.sentence_model = SentenceTransformer(model_name)
         return self.sentence_model
 
-    def fit_category_embeddings(self, categories: List[str], descriptions: Optional[List[str]] = None, model_name: str = 'all-MiniLM-L6-v2') -> pd.DataFrame:
-        """Compute sentence embeddings for category names or descriptions and store mapping.
-        If descriptions are provided, they will be used for embeddings (more semantic).
-        Otherwise, category names are used.
+    def fit_description_embeddings(self, descriptions: List[str]) -> pd.DataFrame:
+
+        model = self.ensure_sentence_model()
         
-        Args:
-            categories: List of category names
-            descriptions: Optional list of descriptions (one per category). If provided, these are used for embeddings.
-            model_name: Sentence transformer model name
-            
-        Returns:
-            DataFrame with embeddings indexed by category name
-        """
-        model = self.ensure_sentence_model(model_name)
-        cats = [str(c) for c in categories]
+        texts = [str(d) for d in descriptions]
+        embeddings = model.encode(
+        texts,
+        normalize_embeddings=True,
+        show_progress_bar=False
+    )
         
-        # Use descriptions for embeddings if provided, otherwise use category names
-        if descriptions is not None:
-            texts = [str(d) for d in descriptions]
-            self.embedding_source = 'description'
-        else:
-            texts = cats
-            self.embedding_source = 'category'
-        
-        vecs = model.encode(texts, show_progress_bar=False)
-        df = pd.DataFrame(vecs, index=cats)
+        df = pd.DataFrame(embeddings, index=texts)
         self.category_embeddings = df
-        self.cat_to_vec = {c: vecs[i] for i, c in enumerate(cats)}
         return df
 
-    def cluster_categories(self, n_clusters: int = 8, method: str = 'kmeans') -> Dict[str, int]:
+    def cluster_descriptions_kmeans(self, n_clusters: int = 4):
         if self.category_embeddings is None:
-            raise ValueError('Call fit_category_embeddings(categories) first')
+            raise ValueError('Call fit_description_embeddings() first')
 
         X = self.category_embeddings.values
-        if method == 'kmeans':
-            km = KMeans(n_clusters=n_clusters, random_state=42)
-            labels = km.fit_predict(X)
-            self.cluster_model = km
-        else:
-            raise NotImplementedError('Only kmeans implemented for now')
-
+        km = KMeans(
+            n_clusters=n_clusters,
+            n_init=20,
+            random_state=42
+        )
+        
+        labels = km.fit_predict(X)
+        self.cluster_model = km
         self.cluster_labels = dict(zip(self.category_embeddings.index.tolist(), labels.tolist()))
+
         return self.cluster_labels
 
-    def get_cluster_for_category(self, category: str):
-        return self.cluster_labels.get(category)
+    def merge_semantic_descriptions(self, df: pd.DataFrame) -> pd.DataFrame:
 
-    def merge_semantic_categories(self, df: pd.DataFrame, how: str = 'cluster', use_column: str = None) -> pd.DataFrame:
-        """Return a copy of df with a new column 'semantic_category' using cluster labels.
-        df must have a 'category' column (and optionally a 'description' column).
-        
-        Args:
-            df: DataFrame with 'category' column (and optional 'description')
-            how: Clustering method used (currently only 'cluster' supported)
-            use_column: if None, auto-detects based on embedding source; can be 'category' or 'description'
-            
-        Returns:
-            DataFrame with added 'semantic_category' column
-        """
         if self.cluster_labels is None:
-            raise ValueError('Run fit_category_embeddings() and cluster_categories() first')
+            raise ValueError("Run embedding + clustering first")
         
         df2 = df.copy()
-        
-        # Always map via category (cluster_labels is keyed by category name)
-        df2['semantic_category'] = df2['category'].map(lambda c: f'cluster_{self.cluster_labels.get(c, -1)}')
+        df2['description_cluster'] = df2['description'].map(lambda d: f'cluster_{self.cluster_labels.get(str(d), -1)}')
         
         return df2
 
