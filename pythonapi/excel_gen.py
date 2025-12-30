@@ -18,6 +18,18 @@ def create_excel(result):
         for cid, desc in result['ml_insights']['description_clustering'].items()
     ])
 
+    drift_data = result['ml_insights']['drift_report']['data']
+
+    if isinstance(drift_data, dict):
+        drift_df = pd.DataFrame([
+            {'feature': k, **v} if isinstance(v, dict) else {'feature': k, 'value': v}
+            for k, v in drift_data.items()
+        ])
+    elif isinstance(drift_data, list):
+        drift_df = pd.DataFrame(drift_data)
+    else:
+        drift_df = pd.DataFrame()
+
     # Write to Excel inside memory buffer
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         summary_df.to_excel(writer, index=False, sheet_name='Summary')
@@ -25,6 +37,7 @@ def create_excel(result):
         anomalies_df.to_excel(writer, index=False, sheet_name='Anomalies')
         predictions_df.to_excel(writer, index=False, sheet_name='Predictions')
         clusters_df.to_excel(writer, index=False, sheet_name='Clusters')
+        drift_df.to_excel(writer, index=False, sheet_name='Drift_Report')
 
     output.seek(0)
     return output

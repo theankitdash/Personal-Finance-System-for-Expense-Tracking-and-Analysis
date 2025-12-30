@@ -5,6 +5,7 @@ from pythonapi.ml_module import FinanceML
 
 # Function to convert and prepare data for analysis
 def prepare_data(expenses, budget_data):
+    
     df_expenses = pd.DataFrame(expenses)
     df_budget = pd.DataFrame(budget_data)
 
@@ -44,7 +45,7 @@ def group_by_month_category(df_expenses):
     return month_category_data
 
 # ML-based financial analysis using FinanceML module
-def analyze_with_ml(df_expenses, df_budget):
+def analyze_with_ml(df_range, df_all, df_budget):
     
     ml_insights = {
         'anomalies': [],
@@ -54,36 +55,22 @@ def analyze_with_ml(df_expenses, df_budget):
     }
     
     try:
-        # Convert Decimal types to float
-        df_aggregated_clean = df_expenses.copy()
-        for col in df_aggregated_clean.select_dtypes(include=['object']).columns:
-            try:
-                df_aggregated_clean[col] = pd.to_numeric(df_aggregated_clean[col])
-            except (ValueError, TypeError):
-                pass
-        
-        df_budget_clean = df_budget.copy()
-        for col in df_budget_clean.select_dtypes(include=['object']).columns:
-            try:
-                df_budget_clean[col] = pd.to_numeric(df_budget_clean[col])
-            except (ValueError, TypeError):
-                pass
-            
         # Initialize FinanceML
         fm = FinanceML(model_dir='ml_models')
         
         # Build features from the data
-        features_df = fm.build_features(df_aggregated_clean, df_budget_clean)
+        features_df_all = fm.build_features(df_all, df_budget)
         
-        if features_df.empty:
+        if features_df_all.empty:
             return ml_insights
         
         # 1. Fit unsupervised anomaly detection models
-        fm.fit_unsupervised(features_df)
+        fm.fit_unsupervised(features_df_all)
         
-        # Detect anomalies
-        anomalies_df = fm.detect_anomalies(features_df, return_scores=True)
-        anomalies_df = anomalies_df[anomalies_df['is_anomaly']]
+        # Detect anomalies on RANGE data (within selected period)
+        features_df_range = fm.build_features(df_range, df_budget)
+        anomalies_df = fm.detect_anomalies(features_df_range, return_scores=True)
+        anomalies_df = anomalies_df[anomalies_df['is_anomaly']]      
         
         for _, row in anomalies_df.iterrows():
             ml_insights['anomalies'].append({
@@ -98,7 +85,7 @@ def analyze_with_ml(df_expenses, df_budget):
             })
         
         # 2. Compute drift detection
-        drift_result = fm.compute_drift(df_aggregated_clean)
+        drift_result = fm.compute_drift(df_all)
         if 'message' not in drift_result:
             ml_insights['drift_report'] = {
                 'current_month': str(drift_result['current_month'].date()) if hasattr(drift_result['current_month'], 'date') else str(drift_result['current_month']),
@@ -109,8 +96,8 @@ def analyze_with_ml(df_expenses, df_budget):
             }
         
         # 3. Train regressors and predict next month
-        fm.train_regressors(df_aggregated_clean, df_budget_clean)
-        predictions = fm.predict_next_month(df_aggregated_clean, df_budget_clean)
+        fm.train_regressors(df_all, df_budget)
+        predictions = fm.predict_next_month(df_all, df_budget)
         
         for cat, pred_data in predictions.items():
             low, high = pred_data['conf_int']
@@ -126,7 +113,7 @@ def analyze_with_ml(df_expenses, df_budget):
         
         # 4. Semantic description clustering 
         try:
-            descriptions = (df_aggregated_clean['description'].dropna().astype(str).unique().tolist()
+            descriptions = (df_range['description'].dropna().astype(str).unique().tolist()
                             )
             if len(descriptions) > 1:
                 # Step 1: Embed descriptions
@@ -198,17 +185,30 @@ def build_summary_report(df_budget, month_category_data, from_date, to_date, df_
     # Ensure budget amounts are floats
     df_budget = df_budget.copy()
     df_budget['amount'] = pd.to_numeric(df_budget['amount'], errors='coerce').fillna(0.0)
+
+    # Calculate number of months in the period
+    from_dt = pd.to_datetime(from_date)
+    to_dt = pd.to_datetime(to_date)
+    num_months = (to_dt.year - from_dt.year) * 12 + (to_dt.month - from_dt.month) + 1
+    num_months = max(1, num_months)  # At least 1 month
+    
+    # Calculate total budget for the period (monthly budget * number of months)
+    monthly_budget_total = float(df_budget['amount'].sum()) if not df_budget.empty else 0.0
+    period_budget_total = monthly_budget_total * num_months
     
     summary = {
         'period': {
             'from': from_date,
             'to': to_date,
-            'display': f"{from_date} to {to_date}"
+            'display': f"{from_date} to {to_date}",
+            'num_months': num_months
         },
         'total_spending': 0.0,
         'total_spending_display': "₹0",
-        'total_budget': float(df_budget['amount'].sum()) if not df_budget.empty else 0.0,
-        'total_budget_display': f"₹{float(df_budget['amount'].sum()):,.0f}" if not df_budget.empty else "₹0",
+        'total_budget': period_budget_total,
+        'total_budget_display': f"₹{period_budget_total:,.0f}" if period_budget_total > 0 else "₹0",
+        'monthly_budget': monthly_budget_total,
+        'monthly_budget_display': f"₹{monthly_budget_total:,.0f}" if monthly_budget_total > 0 else "₹0",
         'categories': [],
         'monthly_breakdown': [],
         'current_month': None,
@@ -222,13 +222,14 @@ def build_summary_report(df_budget, month_category_data, from_date, to_date, df_
         for category in month_category_data.columns:
             total_cat = month_category_data[category].sum()
             budget_cat = df_budget[df_budget['category'] == category]['amount'].values
-            budget_amount = float(budget_cat[0]) if len(budget_cat) > 0 else 0.0
+            monthly_budget_cat = float(budget_cat[0]) if len(budget_cat) > 0 else 0.0
+            period_budget_cat = monthly_budget_cat * num_months
             
             status = "WITHIN"
             variance = 0.0
             status_emoji = "✓"
-            if budget_amount > 0:
-                variance = ((total_cat - budget_amount) / budget_amount) * 100
+            if period_budget_cat > 0:
+                variance = ((total_cat - period_budget_cat) / period_budget_cat) * 100
                 status = "OVER" if variance > 0 else "WITHIN"
                 status_emoji = "⚠" if variance > 0 else "✓"
             
@@ -236,8 +237,10 @@ def build_summary_report(df_budget, month_category_data, from_date, to_date, df_
                 'name': category,
                 'total_spent': float(total_cat),
                 'total_spent_display': f"₹{float(total_cat):,.0f}",
-                'budget': budget_amount,
-                'budget_display': f"₹{float(budget_amount):,.0f}" if budget_amount > 0 else "No budget set",
+                'budget': period_budget_cat,
+                'budget_display': f"₹{period_budget_cat:,.0f}" if period_budget_cat > 0 else "No budget set",
+                'monthly_budget': monthly_budget_cat,
+                'monthly_budget_display': f"₹{monthly_budget_cat:,.0f}" if monthly_budget_cat > 0 else "No budget set",
                 'variance_percent': float(variance),
                 'variance_display': f"{variance:+.1f}%",
                 'status': status,
@@ -252,24 +255,35 @@ def build_summary_report(df_budget, month_category_data, from_date, to_date, df_
                 'month': month,
                 'total': float(month_total),
                 'total_display': f"₹{float(month_total):,.0f}",
+                'budget': monthly_budget_total,
+                'budget_display': f"₹{monthly_budget_total:,.0f}",
                 'categories': {cat: f"₹{float(amount):,.0f}" for cat, amount in row.items()}
             })
         
         summary['total_spending'] = float(month_category_data.sum().sum())
         summary['total_spending_display'] = f"₹{summary['total_spending']:,.0f}"
+
+        # Overall health assessment based on entire period
+        period_spent = summary['total_spending']
+        period_budget = summary['total_budget']
+        overall_usage_percent = (period_spent / period_budget * 100) if period_budget > 0 else 0
+        
+        # Health assessment
+        health = "Good - On track with budget"
+        if overall_usage_percent > 90:
+            health = "Caution - Nearing budget limit"
+        if overall_usage_percent > 100:
+            health = "Alert - Over budget"
+        
+        summary['overall_health'] = health
+        summary['overall_usage_percent'] = float(overall_usage_percent)
+        summary['overall_usage_label'] = f"{overall_usage_percent:.1f}%"
         
         # Current month data with health assessment
         if current_month in month_category_data.index:
             current_spent = month_category_data.loc[current_month].sum()
             current_budget = summary['total_budget']
             usage_percent = (current_spent / current_budget * 100) if current_budget > 0 else 0
-            
-            # Health assessment
-            health = "Good - On track with budget"
-            if usage_percent > 90:
-                health = "Caution - Nearing budget limit"
-            if usage_percent > 100:
-                health = "Alert - Over budget"
             
             summary['current_month'] = {
                 'month': current_month,
@@ -281,11 +295,9 @@ def build_summary_report(df_budget, month_category_data, from_date, to_date, df_
                 'remaining_display': f"₹{float(current_budget - current_spent):,.0f}",
                 'usage_percent': float(usage_percent),
                 'usage_label': f"{usage_percent:.1f}%",
-                'health_status': health
+                'health_status': "Good - On track" if usage_percent <= 90 else "Caution - Nearing limit" if usage_percent <= 100 else "Alert - Over budget"
             }
-            
-            summary['overall_health'] = health
-    
+
     return summary
 
 # Main function to orchestrate the analysis
@@ -301,7 +313,8 @@ def analyze_financial_data(budget_data, from_date, to_date, range_data, all_data
         df_all, df_budget = prepare_data(all_data, budget_data)
 
         # Prepare range-filtered dataset
-        df_range, _ = prepare_data(range_data, budget_data)
+        df_range, df_budget = prepare_data(range_data, budget_data)
+
         df_range = filter_by_date(df_range, from_date, to_date)
 
         # Group by month/category using only range data
@@ -311,7 +324,7 @@ def analyze_financial_data(budget_data, from_date, to_date, range_data, all_data
         summary = build_summary_report(df_budget, month_category_data, from_date, to_date, df_all)
         
         # Run ML analysis
-        ml_insights = analyze_with_ml(df_all, df_budget)
+        ml_insights = analyze_with_ml(df_range, df_all, df_budget)
         
         # Return comprehensive JSON response with user-friendly formatting
         return {
@@ -325,7 +338,7 @@ def analyze_financial_data(budget_data, from_date, to_date, range_data, all_data
                     'items': ml_insights['anomalies'],
                     'description': f"Found {len(ml_insights['anomalies'])} unusual spending patterns" if ml_insights['anomalies'] else "No unusual spending patterns detected"
                 },
-                'drift_analysis': {
+                'drift_report': {
                     'data': ml_insights['drift_report'],
                     'description': "Analysis of how your spending patterns have changed" if ml_insights['drift_report'] else "Insufficient data for drift analysis"
                 },
