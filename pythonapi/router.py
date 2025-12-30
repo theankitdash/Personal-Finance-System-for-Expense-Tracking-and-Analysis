@@ -6,7 +6,6 @@ from .config_db import config, get_db_connection
 from .models import AnalyzeRequest
 from .analysis import analyze_financial_data
 from .excel_gen import create_excel
-import io
 
 router = APIRouter()
 

@@ -1,6 +1,4 @@
 from fastapi import FastAPI
-from pythonapi.analysis import analyze_financial_data
-#from analysis import analyze_financial_data
 from fastapi.middleware.cors import CORSMiddleware
 from .config_db import config
 from .router import router

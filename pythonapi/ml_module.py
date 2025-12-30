@@ -122,7 +122,7 @@ class FinanceML:
         return df2
 
     # --------------------- Feature engineering ---------------------
-    def build_features(self, df: pd.DataFrame, budgets_df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    def build_features(self, df: pd.DataFrame, budgets_df: pd.DataFrame = None) -> pd.DataFrame:
         """
         Build multivariate features per (month, category) row for anomaly detection / regression.
         Input df: columns ['date','category','amount'] where date is datetime-like.
