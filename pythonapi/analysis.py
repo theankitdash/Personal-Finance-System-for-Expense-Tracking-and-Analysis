@@ -2,6 +2,7 @@ import sys
 import pandas as pd
 from datetime import timedelta, datetime
 from pythonapi.ml_module import FinanceML
+from pythonapi.cluster import ClusterML, normalize_description
 
 # Function to convert and prepare data for analysis
 def prepare_data(expenses, budget_data):
@@ -49,14 +50,15 @@ def analyze_with_ml(df_range, df_all, df_budget):
     
     ml_insights = {
         'anomalies': [],
-        'drift_report': None,
         'predictions': {},
-        'description_clustering': {}
+        'description_clustering': {},
+        'drift_report': None
     }
     
     try:
         # Initialize FinanceML
         fm = FinanceML(model_dir='ml_models')
+        clustergrp = ClusterML()
         
         # Build features from the data
         features_df_all = fm.build_features(df_all, df_budget)
@@ -113,27 +115,16 @@ def analyze_with_ml(df_range, df_all, df_budget):
         
         # 4. Semantic description clustering 
         try:
-            descriptions = (df_range['description'].dropna().astype(str).unique().tolist()
-                            )
+            descriptions = (df_range['description'].dropna().astype(str).map(normalize_description).unique().tolist())
+
             if len(descriptions) > 1:
                 # Step 1: Embed descriptions
-                fm.fit_description_embeddings(descriptions)
+                clustergrp.fit_description_embeddings(descriptions)
 
-                # Step 2: Choose cluster count
-                n = len(descriptions)
-                if n <= 5:
-                    n_clusters = 2
-                elif n <= 10:
-                    n_clusters = 3
-                else:
-                    n_clusters = max(3, min(n // 3, 8))
+                # Step 2: KMeans clustering
+                clusters = clustergrp.cluster_descriptions_kmeans()
 
-                # Step 3: KMeans clustering
-                clusters = fm.cluster_descriptions_kmeans(
-                    n_clusters=n_clusters
-                )
-
-                # Step 4: Group results
+                # Step 3: Group results
                 clusters_by_group = {}
                 for desc, cid in clusters.items():
                     clusters_by_group.setdefault(cid, []).append(desc)

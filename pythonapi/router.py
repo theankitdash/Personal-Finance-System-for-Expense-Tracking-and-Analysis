@@ -4,7 +4,7 @@ import jwt
 from datetime import datetime
 from .config_db import config, get_db_connection
 from .models import AnalyzeRequest
-from .analysis import analyze_financial_data
+from .pipeline import analyze_with_ml
 from .excel_gen import create_excel
 
 router = APIRouter()
@@ -46,7 +46,7 @@ async def analyze(data: AnalyzeRequest, auth_token: str = Cookie(None)):
 
     await conn.close()
 
-    report = analyze_financial_data(budgets, data.fromDate, data.toDate, range_expenses, all_expenses)
+    report = analyze_with_ml(budgets, data.fromDate, data.toDate, range_expenses, all_expenses)
     #print(report)
 
     excel_buffer = create_excel(report)

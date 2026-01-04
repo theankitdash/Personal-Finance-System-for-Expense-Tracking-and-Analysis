@@ -21,7 +21,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.svm import OneClassSVM
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from scipy.spatial.distance import jensenshannon
@@ -32,12 +31,6 @@ try:
     _HAS_XGBOOST = True
 except Exception:
     _HAS_XGBOOST = False
-
-try:
-    from sentence_transformers import SentenceTransformer
-    _HAS_SENTENCE_TRANSFORMERS = True
-except Exception:
-    _HAS_SENTENCE_TRANSFORMERS = False
 
 try:
     import torch
@@ -64,62 +57,6 @@ class FinanceML:
 
         # regressors per (normalized) category
         self.regressors = {}
-
-        # embeddings
-        self.description_embeddings = None
-        self.cluster_labels = None
-        self.cluster_model = None
-        self.sentence_model = None
-
-    # --------------------- Description embeddings & clustering ---------------------
-    def ensure_sentence_model(self, model_name: str = 'all-MiniLM-L6-v2'):
-        if not _HAS_SENTENCE_TRANSFORMERS:
-            raise ImportError("sentence-transformers is required for semantic category embeddings. Install with: pip install sentence-transformers")
-        if self.sentence_model is None:
-            self.sentence_model = SentenceTransformer(model_name)
-        return self.sentence_model
-
-    def fit_description_embeddings(self, descriptions: List[str]) -> pd.DataFrame:
-
-        model = self.ensure_sentence_model()
-        
-        texts = [str(d) for d in descriptions]
-        embeddings = model.encode(
-        texts,
-        normalize_embeddings=True,
-        show_progress_bar=False
-    )
-        
-        df = pd.DataFrame(embeddings, index=texts)
-        self.category_embeddings = df
-        return df
-
-    def cluster_descriptions_kmeans(self, n_clusters: int = 4):
-        if self.category_embeddings is None:
-            raise ValueError('Call fit_description_embeddings() first')
-
-        X = self.category_embeddings.values
-        km = KMeans(
-            n_clusters=n_clusters,
-            n_init=20,
-            random_state=42
-        )
-        
-        labels = km.fit_predict(X)
-        self.cluster_model = km
-        self.cluster_labels = dict(zip(self.category_embeddings.index.tolist(), labels.tolist()))
-
-        return self.cluster_labels
-
-    def merge_semantic_descriptions(self, df: pd.DataFrame) -> pd.DataFrame:
-
-        if self.cluster_labels is None:
-            raise ValueError("Run embedding + clustering first")
-        
-        df2 = df.copy()
-        df2['description_cluster'] = df2['description'].map(lambda d: f'cluster_{self.cluster_labels.get(str(d), -1)}')
-        
-        return df2
 
     # --------------------- Feature engineering ---------------------
     def build_features(self, df: pd.DataFrame, budgets_df: pd.DataFrame = None) -> pd.DataFrame:
