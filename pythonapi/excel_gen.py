@@ -7,15 +7,6 @@ def create_excel(result):
 
     # Initialize workbook writer
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        workbook = writer.book
-        
-        # Create formats
-        header_format = workbook.add_format({
-            'bold': True,
-            'bg_color': '#4472C4',
-            'font_color': 'white',
-            'border': 1
-        })
         
         # ==================== FEATURES SHEET ====================
         if result.get('features') is not None:
