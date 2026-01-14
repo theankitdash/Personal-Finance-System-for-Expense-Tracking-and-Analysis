@@ -1,23 +1,31 @@
 {
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "express-session": "^1.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "nodemon": "^3.1.11",
-    "pg": "^8.16.3"
-  },
   "name": "finance-tracker",
   "version": "1.0.0",
   "description": "A finance tracker for tracking monthly expenses.",
   "main": "server.js",
+  "type": "commonjs",
   "scripts": {
     "devStart": "nodemon server.js",
     "start": "node server.js"
   },
-  "keywords": [],
+  "keywords": [
+    "finance",
+    "expense-tracker",
+    "budget"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.1.5",
+    "express-session": "^1.18.2",
+    "express-validator": "^7.3.1",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
 }

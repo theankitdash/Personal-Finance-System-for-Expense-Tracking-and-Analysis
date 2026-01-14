@@ -1,62 +1,67 @@
 <!DOCTYPE html>
-<html lang = 'en'>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="Finace Tracker Login and Signup.">
-        <title>Financial Tracker</title>
-        <link rel="stylesheet" href = "css/style.css">
-    </head>
+<html lang='en'>
 
-    <body>
-        <div class="container">
-            <div class="form-container">
-                <h2 id="formTitle">Login</h2>
-                <form id="authForm" onsubmit="submitForm(event)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Finance Tracker Login and Signup.">
+    <title>Financial Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
 
-                    <label for="phone">Phone Number:</label>
-                    <input type="tel" id="phone" name="phone" required aria-label="Phone Number" pattern="[0-9]{10}">   
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h2 id="formTitle">Login</h2>
+            <form id="authForm" onsubmit="submitForm(event)">
 
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required aria-label="Password">
+                <label for="phone">Phone Number:</label>
+                <input type="tel" id="phone" name="phone" required aria-label="Phone Number" pattern="[0-9]{10}">
 
-                    <label id="confirmPasswordLabel" for="confirmPassword" style="display:none;">Confirm Password:</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" style="display:none;" aria-label="Confirm Password">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required aria-label="Password">
 
-                    <button type="submit" id="submitButton">Login</button>
-                </form>
-                <p id="forgotPasswordText"><a href="#" onclick="showForgotPassword()">Forgot Password?</a></p>
-                <p id="toggleFormText">Don't have an account? <a href="#" onclick="toggleForm()">Register here</a></p>
-            </div>
+                <label id="confirmPasswordLabel" for="confirmPassword" style="display:none;">Confirm Password:</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" style="display:none;"
+                    aria-label="Confirm Password">
 
-            <!-- Forgot Password Modal -->
-            <div id="forgotPasswordModal" class="modal">
-                <div class="modal-content">
-                    <span id="closeModalButton" class="close">&times;</span>
-                    <div id="step1">
-                        <h2>Forgot Password</h2>
-                        <form id="verifyUserForm">
-                            <label for="resetPhone">Phone Number:</label>
-                            <input type="tel" id="resetPhone" name="resetPhone" required aria-label="Phone Number" pattern="[0-9]{10}">
+                <button type="submit" id="submitButton">Login</button>
+            </form>
+            <p id="forgotPasswordText"><a href="#" onclick="showForgotPassword()">Forgot Password?</a></p>
+            <p id="toggleFormText">Don't have an account? <a href="#" onclick="toggleForm()">Register here</a></p>
+        </div>
 
-                            <label for="dob">Date of Birth:</label>
-                            <input type="date" id="dob" name="dob" required aria-label="Date of Birth">
+        <!-- Forgot Password Modal -->
+        <div id="forgotPasswordModal" class="modal">
+            <div class="modal-content">
+                <span id="closeModalButton" class="close">&times;</span>
+                <div id="step1">
+                    <h2>Forgot Password</h2>
+                    <form id="verifyUserForm">
+                        <label for="resetPhone">Phone Number:</label>
+                        <input type="tel" id="resetPhone" name="resetPhone" required aria-label="Phone Number"
+                            pattern="[0-9]{10}">
 
-                            <button type="submit">Verify</button>
-                        </form>
-                    </div>
-                    <div id="step2" style="display:none;">
-                        <h2>Set New Password</h2>
-                        <form id="resetPasswordForm">
-                            <label for="newPassword">New Password:</label>
-                            <input type="password" id="newPassword" name="newPassword" required aria-label="New Password">
+                        <label for="dob">Date of Birth:</label>
+                        <input type="date" id="dob" name="dob" required aria-label="Date of Birth">
 
-                            <button type="submit">Reset Password</button>
-                        </form>
-                    </div>
+                        <button type="submit">Verify</button>
+                    </form>
+                </div>
+                <div id="step2" style="display:none;">
+                    <h2>Set New Password</h2>
+                    <form id="resetPasswordForm">
+                        <label for="newPassword">New Password:</label>
+                        <input type="password" id="newPassword" name="newPassword" required aria-label="New Password">
+
+                        <button type="submit">Reset Password</button>
+                    </form>
                 </div>
             </div>
-        </div>   
-        <script src="js/script.js"></script>
-    </body>
+        </div>
+    </div>
+    <script src="js/utils.js"></script>
+    <script src="js/script.js"></script>
+</body>
+
 </html>

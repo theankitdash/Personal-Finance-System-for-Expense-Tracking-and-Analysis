@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
     // Fetch all expenses history
     async function fetchAllExpenses() {
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
             handleFetchError(error, 'Error fetching unique options');
         }
     }
-    
+
     // Function to fetch categories
     async function fetchCategories() {
         try {
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Error fetching categories. Please try again later.');
         }
     }
-    
+
     // Function to format date as YYYY-MM-DD
     function formatDate(dateString) {
         if (!dateString) return ''; // Return empty string if date is not provided
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add event listener to the form submission
     const saveExpenseBtn = document.getElementById('saveExpenseBtn');
-    
+
     function handleSaveOrUpdateButtonClick(event) {
         event.preventDefault(); // Prevent default form submission behavior
 
@@ -114,28 +114,30 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify(expenseData)
         })
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                return response.json().then(errorData => {
-                    throw new Error(`Failed to ${expenseId ? 'update' : 'save'} expense: ${errorData.message}`);
-                });
-            }
-        })
-        .then(data => {
-            console.log(`${expenseId ? 'Expense updated' : 'Expense saved'} successfully:`, data);
-            alert(`${expenseId ? 'Expense updated' : 'Expense saved'} successfully`);
-            fetchAllExpenses(); // Refresh expenses history after saving/updating
+            .then(async response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    const errorData = await response.json();
+                    displayValidationErrors(errorData);
+                    throw new Error('Validation failed');
+                }
+            })
+            .then(data => {
+                console.log(`${expenseId ? 'Expense updated' : 'Expense saved'} successfully:`, data);
+                alert(`${expenseId ? 'Expense updated' : 'Expense saved'} successfully`);
+                fetchAllExpenses(); // Refresh expenses history after saving/updating
 
-            // Reset form and button state
-            resetForm();
-        })
-        .catch(error => {
-            handleFetchError(error, `Error ${expenseId ? 'updating' : 'saving'} expense`);
-        });
+                // Reset form and button state
+                resetForm();
+            })
+            .catch(error => {
+                if (error.message !== 'Validation failed') {
+                    handleError(error, `${expenseId ? 'updating' : 'saving'} expense`);
+                }
+            });
     }
- 
+
     // Update filter options
     function updateFilterOptions() {
         const filterType = document.getElementById('selectFilter').value;
@@ -158,17 +160,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         selectOption.style.display = 'block';
         fetchUniqueOptions(filterType)
-        .then(uniqueOptions => {
-            uniqueOptions.forEach(option => {
-                const opt = document.createElement('option');
-                opt.value = option;
-                opt.textContent = option;
-                selectOption.appendChild(opt);
+            .then(uniqueOptions => {
+                uniqueOptions.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option;
+                    opt.textContent = option;
+                    selectOption.appendChild(opt);
+                });
+            })
+            .catch(error => {
+                handleFetchError(error, 'Error fetching unique options');
             });
-        })
-        .catch(error => {
-            handleFetchError(error, 'Error fetching unique options');
-        });
     }
 
     // Update expenses history based on selected filter
@@ -212,59 +214,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create table row for each expense
     function createExpenseRow(expense, formattedDate) {
         const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${formattedDate}</td>
+            <td>${parseFloat(expense.amount).toFixed(2)}</td>
+            <td>${expense.description}</td>
+            <td>${expense.category}</td>
+            <td>
+                <button class="btn-remove" data-id="${expense.id}" aria-label="Remove expense">Remove</button>
+                <button class="btn-modify" data-id="${expense.id}" aria-label="Modify expense">Modify</button>
+            </td>
+        `;
 
-        const dateCell = document.createElement('td');
-        dateCell.textContent = formattedDate;
-        row.appendChild(dateCell);
-
-        const amountCell = document.createElement('td');
-        amountCell.textContent = expense.amount;
-        row.appendChild(amountCell);
-
-        const descriptionCell = document.createElement('td');
-        descriptionCell.textContent = expense.description;
-        row.appendChild(descriptionCell);
-
-        const categoryCell = document.createElement('td');
-        categoryCell.textContent = expense.category;
-        row.appendChild(categoryCell);
-
-        //Action button
-        const actionCell = document.createElement('td');
-        
-        const removeButton = document.createElement('button');
-        removeButton.textContent = 'Remove';
-        removeButton.setAttribute('aria-label', 'Remove expense');
-        removeButton.addEventListener('click', () => removeExpense(expense.id));
-        actionCell.appendChild(removeButton);
-
-        const modifyButton = document.createElement('button');
-        modifyButton.textContent = 'Modify';
-        modifyButton.setAttribute('aria-label', 'Modify expense');
-        modifyButton.addEventListener('click', () => modifyExpense(expense));
-        actionCell.appendChild(modifyButton);
-
-        row.appendChild(actionCell);
+        // Attach event listeners
+        row.querySelector('.btn-remove').addEventListener('click', () => removeExpense(expense.id));
+        row.querySelector('.btn-modify').addEventListener('click', () => modifyExpense(expense));
 
         return row;
     }
 
     // Remove expense
-    function removeExpense(id) {
-        fetch(`/expenses/${id}`, {
-            method: 'DELETE'
-        })
-        .then(response => {
+    async function removeExpense(id) {
+        try {
+            const response = await fetch(`/expenses/${id}`, {
+                method: 'DELETE'
+            });
+
             if (response.ok) {
-                updateExpensesHistory();
+                await updateExpensesHistory();
                 alert('Expense removed successfully');
             } else {
-                throw new Error('Failed to remove expense');
+                const errorData = await response.json();
+                displayValidationErrors(errorData);
             }
-        })
-        .catch(error => {
-            handleFetchError(error, 'Error removing expense');
-        });
+        } catch (error) {
+            handleError(error, 'removing expense');
+        }
     }
 
     // Modify expense
