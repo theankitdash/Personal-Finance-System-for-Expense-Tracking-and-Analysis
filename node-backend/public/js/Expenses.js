@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Fetch all expenses history
     async function fetchAllExpenses() {
         try {
-            const response = await fetch('/expensesHistory?filter=all&value=');
+            const response = await fetchWithCredentials('/expensesHistory?filter=all&value=');
             if (!response.ok) {
                 throw new Error('Failed to fetch expenses history');
             }
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Fetch unique options for a given filter type
     async function fetchUniqueOptions(filterType) {
         try {
-            const response = await fetch(`/uniqueOptions?filter=${filterType}`);
+            const response = await fetchWithCredentials(`/uniqueOptions?filter=${filterType}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch unique options');
             }
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Function to fetch categories
     async function fetchCategories() {
         try {
-            const response = await fetch('/categories');
+            const response = await fetchWithCredentials('/categories');
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log(`Sending ${method} request to ${url} with data:`, expenseData);
 
         // Send request to save or update expense
-        fetch(url, {
+        fetchWithCredentials(url, {
             method: method,
             headers: {
                 'Content-Type': 'application/json'
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 if (error.message !== 'Validation failed') {
-                    handleError(error, `${expenseId ? 'updating' : 'saving'} expense`);
+                    handleFetchError(error, `${expenseId ? 'updating' : 'saving'} expense`);
                 }
             });
     }
@@ -176,17 +176,24 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update expenses history based on selected filter
     async function updateExpensesHistory() {
         const filterType = document.getElementById('selectFilter').value;
-        const selectOption = document.getElementById('selectOption').value;
-        const dateInput = document.getElementById('dateInput').value;
+        const selectOption = document.getElementById('selectOption');
+        const dateInput = document.getElementById('dateInput');
+
+        let value = '';
+        if (filterType === 'date') {
+            value = dateInput.value;
+        } else if (filterType !== 'all') {
+            value = selectOption.value;
+        }
 
         const params = new URLSearchParams();
         params.append('filter', filterType);
-        params.append('value', filterType === 'date' ? dateInput : selectOption);
+        params.append('value', value);
 
         const url = `/expensesHistory?${params.toString()}`;
 
         try {
-            const response = await fetch(url);
+            const response = await fetchWithCredentials(url);
             if (!response.ok) {
                 throw new Error('Failed to fetch expenses history');
             }
@@ -235,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Remove expense
     async function removeExpense(id) {
         try {
-            const response = await fetch(`/expenses/${id}`, {
+            const response = await fetchWithCredentials(`/expenses/${id}`, {
                 method: 'DELETE'
             });
 
@@ -247,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 displayValidationErrors(errorData);
             }
         } catch (error) {
-            handleError(error, 'removing expense');
+            handleFetchError(error, 'removing expense');
         }
     }
 

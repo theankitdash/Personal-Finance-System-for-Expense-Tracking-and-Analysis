@@ -1,13 +1,13 @@
 import sys
 from .data_prep import DataPrepML
-from .anomaly import AnomalyML
-from .regresser import RegresserML
-from .cluster import ClusterML, normalize_description
-from .drift import DriftDetectionML
+from services.anomaly import AnomalyML
+from services.regresser import RegresserML
+from services.cluster import ClusterML, normalize_description
+from services.drift import DriftDetectionML
 
 # ML-based financial analysis
 def analyze_with_ml(budget_data, from_date, to_date, range_data, all_data):
-    
+     
     try: 
         # Base Transactions
         df_range, df_all = DataPrepML.build_base_transactions(range_data, all_data)
@@ -48,7 +48,7 @@ def analyze_with_ml(budget_data, from_date, to_date, range_data, all_data):
         feature_cols = ['month_index','days_in_month','pct_share','weekend_ratio',
             'roc_prev','budget_ratio','volatility_3m','amount'
         ]
-        anomaly_model = AnomalyML(model_dir='ml_models')
+        anomaly_model = AnomalyML(model_dir='pythonapi/ml_models')
         anomaly_model.fit_unsupervised(anomaly_ml, feature_cols)
         anomaly_results = anomaly_model.detect_anomalies(anomaly_ml, feature_cols, return_scores=True)
         
@@ -68,7 +68,7 @@ def analyze_with_ml(budget_data, from_date, to_date, range_data, all_data):
                 'month_of_year'
             ]
         ].copy()
-        regression_model = RegresserML(model_dir='ml_models')
+        regression_model = RegresserML(model_dir='pythonapi/ml_models')
         regression_model.train_regressors(
             regression_ml,
             budgets_df=budget_metrics,

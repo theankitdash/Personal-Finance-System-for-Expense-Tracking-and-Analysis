@@ -8,7 +8,13 @@ import joblib
 
 # --------------------- Regression per category ---------------------
 class RegresserML:
-    def __init__(self, model_dir: str = 'ml_models'):
+    def __init__(self, model_dir: str = None):
+        if model_dir is None:
+            # Get directory where this file is located
+            current_file = os.path.abspath(__file__)  # /path/to/pythonapi/services/anomaly.py
+            pythonapi_dir = os.path.dirname(os.path.dirname(current_file))  # /path/to/pythonapi/
+            model_dir = os.path.join(pythonapi_dir, 'ml_models')
+        
         os.makedirs(model_dir, exist_ok=True)
         self.model_dir = model_dir
         

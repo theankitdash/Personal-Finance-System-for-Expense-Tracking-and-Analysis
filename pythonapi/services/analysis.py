@@ -1,8 +1,8 @@
 import sys
 import pandas as pd
 from datetime import timedelta, datetime
-from pythonapi.services.ml_module import FinanceML
-from pythonapi.services.cluster import ClusterML, normalize_description
+from services.ml_module import FinanceML
+from services.cluster import ClusterML, normalize_description
 
 # Function to convert and prepare data for analysis
 def prepare_data(expenses, budget_data):

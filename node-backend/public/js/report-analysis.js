@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
     const dateForm = document.getElementById('date-form');
     const fromDateInput = document.getElementById('from-date');
@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadingIndicator = document.getElementById('loading-indicator');
     const submitBtn = document.getElementById('submit-btn');
 
-    dateForm.addEventListener('submit', async function(event) {
+    dateForm.addEventListener('submit', async function (event) {
         event.preventDefault();
         const fromDate = fromDateInput.value;
         const toDate = toDateInput.value;
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function analyzeExpenses(fromDate, toDate) {
     try {
-        const response = await fetch('/analyzeFinancialData', {
+        const response = await fetchWithCredentials('/analyzeFinancialData', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

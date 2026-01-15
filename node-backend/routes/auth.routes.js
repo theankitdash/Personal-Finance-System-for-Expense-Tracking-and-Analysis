@@ -59,6 +59,22 @@ router.post('/register',
         try {
             await pool.query('INSERT INTO credentials (phone, password) VALUES ($1, $2)', [phone, hashedPassword]);
             req.session.phone = phone;
+
+            // Create JWT token (same as login)
+            const token = jwt.sign(
+                { phone },
+                process.env.JWT_SECRET,
+                { expiresIn: "7d" }
+            );
+
+            // Set auth token cookie
+            res.cookie("auth_token", token, {
+                httpOnly: true,
+                secure: false,         // true if HTTPS (use false on localhost)
+                sameSite: "strict",
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            });
+
             res.json({ success: true });
         } catch (err) {
             console.error('Error inserting user:', err.message);

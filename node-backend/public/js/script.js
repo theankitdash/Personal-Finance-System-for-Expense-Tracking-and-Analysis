@@ -47,10 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const apiUrl = `/auth/${action}`;
 
         try {
-            const response = await fetch(apiUrl, {
+            const response = await fetchWithCredentials(apiUrl, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json' 
+                headers: {
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ phone, password })
             });
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.success) {
                 alert(`${action.charAt(0).toUpperCase() + action.slice(1)} successful.`);
                 window.location.href = isLoginForm ? 'home.html' : 'account-settings.html';
-            } 
+            }
         } catch (error) {
             alert(error.message);
         }
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('/auth/verify', {
+            const response = await fetchWithCredentials('/auth/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone, dob })
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('/auth/resetPassword', {
+            const response = await fetchWithCredentials('/auth/resetPassword', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone, newPassword })

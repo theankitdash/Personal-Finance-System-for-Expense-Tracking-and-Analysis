@@ -1,8 +1,8 @@
 services:
 
-  mysql:
-    image: mysql:8.0
-    container_name: mysql-db
+  postgresql:
+    image: postgres:16
+    container_name: postgresql-db
     ports:
       - "5432:5432"
     environment:
@@ -11,11 +11,49 @@ services:
       POSTGRES_DB: ${PG_DATABASE}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: unless-stopped
 
   python-api:
     build: ./pythonapi
+    container_name: python-api
     ports:
-      - "8000:8000"    
+      - "8000:8000"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./pythonapi/ml_models:/app/ml_models
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    restart: unless-stopped
 
   node-server:
     build: ./node-backend
@@ -24,13 +62,28 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - postgres  
-      - python-api
+      postgresql:
+        condition: service_healthy
+      python-api:
+        condition: service_healthy
     env_file:
       - .env
-    volumes:
-      - .:/usr/src/app
-    restart: unless-stopped  
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: unless-stopped
 
+    
 volumes:
-  mysql_data:
+  postgres_data:

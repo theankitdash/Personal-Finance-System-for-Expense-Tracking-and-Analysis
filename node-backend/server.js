@@ -1,6 +1,7 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 // Utilities
 const validateEnv = require('./utils/envValidator');
@@ -21,6 +22,7 @@ const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
+app.use(cookieParser());  // Parse cookies before session
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(sessionMiddleware);
 
@@ -29,6 +31,27 @@ app.use('/auth', authRoutes);
 app.use('/', userRoutes);
 app.use('/', expenseRoutes);
 app.use('/', budgetRoutes);
+
+// Health check endpoint for Docker
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'healthy', service: 'node-backend' });
+});
+
+// Debug endpoint to test authentication
+app.get('/debug-auth', (req, res) => {
+    res.json({
+        hasCookies: !!req.cookies,
+        cookies: req.cookies,
+        hasAuthToken: !!req.cookies?.auth_token,
+        hasSession: !!req.session,
+        sessionPhone: req.session?.phone,
+        headers: {
+            cookie: req.headers.cookie
+        }
+    });
+});
+
+
 
 // Start server
 const server = app.listen(port, () => {
@@ -56,4 +79,4 @@ process.on('SIGINT', async () => {
 
 module.exports = { app, server };
 
-// Run with command: cd node-backend && npx nodemon server.js
+// Run with command: cd node-backend && npx nodemon server.js 

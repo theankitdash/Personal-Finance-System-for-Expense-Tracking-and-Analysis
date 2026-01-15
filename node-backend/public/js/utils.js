@@ -1,6 +1,17 @@
 // Shared utility functions for frontend
 
 /**
+ * Wrapper for fetch that automatically includes credentials (cookies)
+ * This ensures auth tokens and session cookies are sent with every request
+ */
+function fetchWithCredentials(url, options = {}) {
+    return fetch(url, {
+        ...options,
+        credentials: 'include'  // Include cookies in all requests
+    });
+}
+
+/**
  * Display validation errors from backend in a user-friendly format
  */
 function displayValidationErrors(errorData) {
