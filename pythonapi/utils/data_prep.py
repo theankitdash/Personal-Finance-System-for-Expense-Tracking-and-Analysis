@@ -10,6 +10,13 @@ class DataPrepML:
         df_all = pd.DataFrame(all_data)
 
         for df in [df_range, df_all]:
+            if df.empty:
+                # Ensure columns exist even if empty to prevent downstream errors
+                for col in ['date', 'amount', 'category', 'description']:
+                    if col not in df.columns:
+                        df[col] = []
+                continue
+
             df['date'] = pd.to_datetime(df['date'])
             df['month'] = df['date'].dt.to_period('M').dt.to_timestamp()
             df['amount'] = pd.to_numeric(df['amount'], errors='coerce').fillna(0.0)

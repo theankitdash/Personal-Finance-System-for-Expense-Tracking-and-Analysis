@@ -42,7 +42,11 @@ class AnomalyML:
         X_scaled = self.scaler.fit_transform(X)
 
         # LOF
-        lof = LocalOutlierFactor(n_neighbors=20, contamination=0.05, novelty=True)
+        n_samples = X_scaled.shape[0]
+        # Use simple heuristic: min(20, n_samples - 1) but ensuring at least 1 neighbor if possible
+        n_neighbors = min(20, max(1, n_samples - 1))
+        
+        lof = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=0.05, novelty=True)
         lof.fit(X_scaled)
         self.lof = lof
         joblib.dump(lof, os.path.join(self.model_dir, 'lof.joblib'))
@@ -147,7 +151,7 @@ class AnomalyML:
             try:
                 lof_scores = self.lof.decision_function(X_scaled)
             except Exception:
-                lof_scores = self.lof.decision_function(X_scaled)
+                lof_scores = np.zeros(X.shape[0])
             results['lof_score'] = lof_scores
             results['lof_anomaly'] = results['lof_score'] < np.percentile(results['lof_score'], 5)
         else:

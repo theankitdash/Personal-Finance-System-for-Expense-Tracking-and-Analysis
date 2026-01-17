@@ -133,9 +133,13 @@ class RegresserML:
             for f in meta["features"]:
                 if f.startswith('lag_'):
                     lag_num = int(f.split("_")[1])
-                    # Use positional indexing to get lag values
+                    # We want the amount from (lag_num - 1) months ago relative to T.
+                    # cat_df.iloc[-1] is T.
+                    # feature lag_1 for T+1 corresponds to amount at T. (index -1)
+                    # feature lag_2 for T+1 corresponds to amount at T-1. (index -2)
+                    
                     if lag_num <= len(cat_df):
-                        val = cat_df.iloc[-lag_num][f]
+                        val = cat_df.iloc[-lag_num]['amount']
                     else:
                         val = 0.0
                     X_row.append(val)
@@ -148,10 +152,10 @@ class RegresserML:
 
                 elif f == 'budget_ratio':
                     b = budget_map.get(cat, np.nan)
-                    # Use lag_1 value for ratio, not last amount
-                    lag1_val = cat_df.iloc[-1]['lag_1'] if len(cat_df) > 0 else last['amount']
+                    # Use amount at T (last row) for budget ratio
+                    last_amount = last['amount']
                     X_row.append(
-                        lag1_val / b if b and b > 0 else 0.0
+                        last_amount / b if b and b > 0 else 0.0
                     )   
                 else:
                     X_row.append(0.0)
