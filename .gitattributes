@@ -1,6 +1,0 @@
-# Exclude node_modules from GitHub language statistics
-node_modules/** linguist-vendored
-
-# Exclude other generated/vendor files if needed
-*.min.js linguist-vendored
-*.min.css linguist-vendored
