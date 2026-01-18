@@ -40,7 +40,7 @@ git clone https://github.com/theankitdash/Personal-Finance-System-for-Expense-Tr
 cd Personal-Finance-System-for-Expense-Tracking-and-Analysis
 ```
 
-### 3. Build and Start Services
+### 2. Build and Start Services
 
 ```bash
 docker-compose up --build
@@ -51,7 +51,7 @@ This will start three services:
 - **Python ML API** on port `8000`
 - **Node.js Backend** on port `3000`
 
-### 4. Access the Application
+### 3. Access the Application
 
 Open your browser and navigate to:
 ```
