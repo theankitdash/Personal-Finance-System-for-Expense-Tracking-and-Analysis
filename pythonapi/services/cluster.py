@@ -133,3 +133,18 @@ class ClusterML:
         df2['description_cluster'] = df2['description'].map(lambda d: f'cluster_{self.cluster_labels.get(str(d), -1)}')
         
         return df2
+
+    def get_embeddings_and_labels(self):
+        """Get embeddings and labels for visualization.
+        
+        Returns:
+            Tuple of (embeddings_array, labels_list) or (None, None) if not fitted
+        """
+        if self.description_embeddings is None or self.cluster_labels is None:
+            return None, None
+        
+        embeddings = self.description_embeddings.values
+        # Get labels in same order as embeddings
+        labels = [self.cluster_labels.get(desc, -1) for desc in self.description_embeddings.index]
+        
+        return embeddings, labels

@@ -1,5 +1,6 @@
 from io import BytesIO
 import pandas as pd
+import os
 
 def create_excel(result):
     """Create Excel workbook from pipeline analysis results."""
@@ -7,6 +8,7 @@ def create_excel(result):
 
     # Initialize workbook writer
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        workbook = writer.book
         
         # ==================== FEATURES SHEET ====================
         if result.get('features') is not None:
@@ -76,6 +78,7 @@ def create_excel(result):
             
             if 'message' in drift:
                 drift_df = pd.DataFrame({'status': [drift['message']]})
+                drift_df.to_excel(writer, index=False, sheet_name='Drift Analysis')
             else:
                 # Create drift summary
                 drift_summary = {
@@ -112,6 +115,75 @@ def create_excel(result):
                         sheet_name='Drift Analysis',
                         startrow=startrow
                     )
+
+        # ==================== VISUALIZATIONS SHEET ====================
+        visualizations = result.get('visualizations', {})
+        if visualizations:
+            # Create a dedicated sheet for visualizations
+            worksheet = workbook.add_worksheet('Visualizations')
+            
+            # Add title
+            title_format = workbook.add_format({
+                'bold': True,
+                'font_size': 14,
+                'font_color': '#2E86AB',
+                'align': 'center'
+            })
+            worksheet.write(0, 0, 'Financial Analysis Visualizations', title_format)
+            worksheet.set_column(0, 0, 60)  # Wide column for charts
+            
+            # Insert charts
+            row = 2
+            chart_order = [
+                # Range data charts
+                ('range_comparison', 'Spending by Category'),
+                ('monthly_trends', 'Monthly Spending Trends'),
+                ('category_breakdown', 'Category Distribution'),
+                ('budget_vs_actual', 'Budget vs Actual Spending'),
+                
+                # Anomaly charts
+                ('anomaly_scatter', 'Anomaly Detection - Scatter Plot'),
+                ('anomaly_timeline', 'Anomaly Timeline'),
+                ('anomaly_heatmap', 'Anomaly Heatmap'),
+                
+                # Regression charts
+                ('predictions', 'Next Month Predictions'),
+                ('prediction_confidence', 'Prediction Confidence Intervals'),
+                ('model_performance', 'Model Performance'),
+                
+                # Clustering charts
+                ('cluster_distribution', 'Cluster Distribution'),
+                ('cluster_embeddings', 'Cluster Embeddings'),
+                
+                # Drift charts
+                ('drift_timeline', 'Drift Timeline'),
+                ('drift_contributors', 'Drift Contributors'),
+                ('category_distribution_shift', 'Category Distribution Shift')
+            ]
+            
+            for chart_key, chart_title in chart_order:
+                chart_path = visualizations.get(chart_key)
+                if chart_path and os.path.exists(chart_path):
+                    # Add chart title
+                    label_format = workbook.add_format({
+                        'bold': True,
+                        'font_size': 11,
+                        'font_color': '#333333'
+                    })
+                    worksheet.write(row, 0, chart_title, label_format)
+                    row += 1
+                    
+                    # Insert image
+                    try:
+                        worksheet.insert_image(row, 0, chart_path, {
+                            'x_scale': 0.8,
+                            'y_scale': 0.8
+                        })
+                        # Move to next chart position (approximate height)
+                        row += 30
+                    except Exception as e:
+                        print(f"Warning: Could not embed chart {chart_key}: {e}")
+                        row += 1
 
     output.seek(0)
     return output

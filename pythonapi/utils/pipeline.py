@@ -6,6 +6,8 @@ from ..services.anomaly import AnomalyML
 from ..services.regresser import RegresserML
 from ..services.cluster import ClusterML, normalize_description
 from ..services.drift import DriftDetectionML
+from ..services.visualizer import Visualizer
+
 
 # ML-based financial analysis
 def analyze_with_ml(budget_data, from_date, to_date, range_data, all_data):
@@ -114,7 +116,8 @@ def analyze_with_ml(budget_data, from_date, to_date, range_data, all_data):
 
         # --------------------- Drift detection ---------------------
         drift_data = monthly_ts_all[monthly_ts_all['month'] <= pd.Timestamp(to_date)]
-        drift_results = DriftDetectionML.compute_drift(drift_data, months_back=1)    
+        drift_results = DriftDetectionML.compute_drift(drift_data, months_back=1)
+        drift_history = DriftDetectionML.compute_drift_history(drift_data, max_periods=6)
 
         # ------------------ Filter Results for Return ------------------
         f_date = pd.to_datetime(from_date)
@@ -132,12 +135,65 @@ def analyze_with_ml(budget_data, from_date, to_date, range_data, all_data):
         final_anomaly_scores = anomaly_results_all[mask_range].copy()
         final_features = monthly_ts_all[mask_range].copy()
 
+        # ------------------ Generate Visualizations ------------------
+        visualizer = Visualizer()
+        
+        try:
+            # Range data visualizations
+            if not df_range_processed.empty:
+                visualizer.plot_range_comparison(df_range_processed)
+                if 'month' in final_features.columns:
+                    visualizer.plot_monthly_trends(final_features)
+                visualizer.plot_category_breakdown(df_range_processed)
+            
+            # Budget vs actual
+            if not budget_metrics_all.empty:
+                visualizer.plot_budget_vs_actual(budget_metrics_all)
+            
+            # Anomaly visualizations
+            if not final_anomaly_scores.empty:
+                visualizer.plot_anomaly_scatter(final_anomaly_scores)
+                visualizer.plot_anomaly_timeline(final_anomaly_scores)
+                visualizer.plot_anomaly_heatmap(final_anomaly_scores)
+            
+            # Regression visualizations
+            if regression_results:
+                visualizer.plot_predictions(regression_results, regression_ml)
+                visualizer.plot_prediction_confidence(regression_results)
+                visualizer.plot_model_performance(regression_results)
+            
+            # Clustering visualizations
+            if clusters_by_group:
+                visualizer.plot_cluster_distribution(clusters_by_group)
+                # Get embeddings for 2D plot
+                if 'cluster_ml' in locals():
+                    embeddings, labels = cluster_ml.get_embeddings_and_labels()
+                    if embeddings is not None:
+                        visualizer.plot_cluster_embeddings(embeddings, labels)
+            
+            # Drift visualizations
+            if drift_results and 'message' not in drift_results:
+                visualizer.plot_drift_contributors(drift_results)
+                visualizer.plot_category_distribution_shift(monthly_ts_all, drift_results)
+            
+            if drift_history:
+                visualizer.plot_drift_timeline(drift_history)
+            
+            chart_paths = visualizer.get_all_chart_paths()
+            
+        except Exception as viz_error:
+            print(f"Warning: Visualization generation failed: {viz_error}", file=sys.stderr)
+            traceback.print_exc()
+            chart_paths = {}
+
         return {
             "features": final_features,
             "anomaly_scores": final_anomaly_scores,
             "regression_predictions": regression_results,
             "clusters": clusters_by_group,
-            "drift_analysis": drift_results
+            "drift_analysis": drift_results,
+            "drift_history": drift_history,
+            "visualizations": chart_paths
         }
         
     except Exception as e:
@@ -148,5 +204,7 @@ def analyze_with_ml(budget_data, from_date, to_date, range_data, all_data):
             "anomaly_scores": None,
             "regression_predictions": None,
             "clusters": {},
-            "drift_analysis": None
+            "drift_analysis": None,
+            "drift_history": None,
+            "visualizations": {}
         }
