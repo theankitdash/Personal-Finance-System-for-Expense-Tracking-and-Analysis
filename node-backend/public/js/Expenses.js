@@ -66,21 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Function to format date as YYYY-MM-DD
-    function formatDate(dateString) {
-        if (!dateString) return ''; // Return empty string if date is not provided
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    // Function to handle fetch errors
-    function handleFetchError(error, message) {
-        console.error(message, error);
-        alert(`An error occurred: ${message}`);
-    }
+    // formatDate and handleFetchError are now provided by utils.js
 
     // Add event listener to the form submission
     const saveExpenseBtn = document.getElementById('saveExpenseBtn');
@@ -104,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const method = expenseId ? 'PUT' : 'POST';
         const expenseData = { date, amount, description, category };
 
-        console.log(`Sending ${method} request to ${url} with data:`, expenseData);
+        devLog(`Sending ${method} request to ${url} with data:`, expenseData);
 
         // Send request to save or update expense
         fetchWithCredentials(url, {
@@ -124,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .then(data => {
-                console.log(`${expenseId ? 'Expense updated' : 'Expense saved'} successfully:`, data);
+                devLog(`${expenseId ? 'Expense updated' : 'Expense saved'} successfully:`, data);
                 alert(`${expenseId ? 'Expense updated' : 'Expense saved'} successfully`);
                 fetchAllExpenses(); // Refresh expenses history after saving/updating
 
@@ -218,14 +204,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Create table row for each expense
     function createExpenseRow(expense, formattedDate) {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${formattedDate}</td>
+            <td>${sanitizeHTML(formattedDate)}</td>
             <td>${parseFloat(expense.amount).toFixed(2)}</td>
-            <td>${expense.description}</td>
-            <td>${expense.category}</td>
+            <td>${sanitizeHTML(expense.description)}</td>
+            <td>${sanitizeHTML(expense.category)}</td>
             <td>
                 <button class="btn-remove" data-id="${expense.id}" aria-label="Remove expense">Remove</button>
                 <button class="btn-modify" data-id="${expense.id}" aria-label="Modify expense">Modify</button>
@@ -241,6 +226,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Remove expense
     async function removeExpense(id) {
+        // Add confirmation dialog before deletion
+        if (!confirm('Are you sure you want to delete this expense? This action cannot be undone.')) {
+            return;
+        }
+
         try {
             const response = await fetchWithCredentials(`/expenses/${id}`, {
                 method: 'DELETE'

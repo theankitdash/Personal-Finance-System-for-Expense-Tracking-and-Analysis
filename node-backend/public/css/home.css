@@ -6,54 +6,7 @@ body {
   min-height: 100vh;
 }
 
-/* Style the header */
-header {
-  background-color: white; 
-  color: #333;
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-}
-
-.left-header {
-  flex: 1;
-  text-align: left;
-}
-
-.right-header {
-  flex: 1;
-  text-align: right;
-}
-
-.header-menu ul {
-  list-style-type: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.header-menu ul li {
-  margin-left: 20px;
-}
-
-.header-menu ul li a {
-  color: #333; 
-  text-decoration: none;
-  font-weight: 500;
-  padding: 10px 15px;
-  border-radius: 4px;
-  transition: background-color 0.3s, color 0.3s;
-}
-
-.header-menu ul li a:hover,
-.header-menu ul li a:focus {
-  background-color: #ddd;
-  outline: none;
-}
+/* Header and nav styles are now in common.css */
 
 /* Style the main content layout */
 .main-content {
@@ -61,14 +14,14 @@ header {
   flex: 1;
   flex-direction: column;
   padding: 5px;
-  
+
 }
 
 @media (min-width: 768px) {
   .main-content {
     flex-direction: row;
-    justify-content: center; 
-    align-items: center; 
+    justify-content: center;
+    align-items: center;
   }
 }
 
@@ -80,9 +33,10 @@ header {
   padding: 20px;
   margin: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
-  width: 100%; /* Ensure full width */
-  
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  /* Ensure full width */
+
 }
 
 @media (min-width: 768px) {

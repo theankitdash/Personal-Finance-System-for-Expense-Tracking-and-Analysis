@@ -185,4 +185,5 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.verifyUserForm.addEventListener('submit', verifyUser);
     elements.resetPasswordForm.addEventListener('submit', resetPassword);
     elements.submitButton.addEventListener('click', submitForm);
+    document.getElementById('authForm').addEventListener('submit', submitForm);
 });

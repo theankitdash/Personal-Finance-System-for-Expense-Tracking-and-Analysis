@@ -27,11 +27,20 @@ function displayValidationErrors(errorData) {
 
 /**
  * Handle fetch errors with proper error display
+ * Works with both Response objects and Error objects
  */
-async function handleFetchError(response, defaultMessage) {
-    if (!response.ok) {
+async function handleFetchError(responseOrError, defaultMessage) {
+    // Handle Error objects (from catch blocks)
+    if (responseOrError instanceof Error) {
+        console.error(defaultMessage, responseOrError);
+        alert(`An error occurred: ${defaultMessage}`);
+        return true;
+    }
+
+    // Handle Response objects
+    if (!responseOrError.ok) {
         try {
-            const errorData = await response.json();
+            const errorData = await responseOrError.json();
             displayValidationErrors(errorData);
         } catch {
             alert(defaultMessage || 'An error occurred');
@@ -51,6 +60,41 @@ function formatDate(dateString) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+}
+
+/**
+ * Sanitize HTML to prevent XSS attacks
+ */
+function sanitizeHTML(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+/**
+ * Check if running in production environment
+ */
+function isProduction() {
+    return window.location.hostname === 'the-financial-tracker.azurewebsites.net';
+}
+
+/**
+ * Get the base URL based on environment
+ */
+function getBaseUrl() {
+    return isProduction()
+        ? 'https://the-financial-tracker.azurewebsites.net'
+        : 'http://localhost:3000';
+}
+
+/**
+ * Development-only logging (suppressed in production)
+ */
+function devLog(...args) {
+    if (!isProduction()) {
+        console.log(...args);
+    }
 }
 
 /**
@@ -75,10 +119,3 @@ function hideLoading(buttonElement) {
     }
 }
 
-/**
- * Generic error handler for console logging and user notification
- */
-function handleError(error, context) {
-    console.error(`Error in ${context}:`, error);
-    alert(`An error occurred: ${error.message || 'Please try again later'}`);
-}

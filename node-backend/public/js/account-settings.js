@@ -22,15 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
             alert("Personal details not found. Please add to continue further!");
         });
 
-    // Function to format date as YYYY-MM-DD
-    function formatDate(date) {
-        if (!date) return '';
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
+    // formatDate is now provided by utils.js
 
     // Add event listener to the change password button
     const changePasswordBtn = document.getElementById('changePasswordBtn');
@@ -54,12 +46,12 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(data => {
                 // Handle successful password change
-                console.log('Password changed successfully:', data);
+                devLog('Password changed successfully:', data);
                 alert('Password changed successfully');
             })
             .catch(error => {
                 // Handle error
-                console.error('Error changing password:', error);
+                devLog('Error changing password:', error);
                 alert('An error occurred while changing password');
             });
     });
@@ -88,25 +80,18 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(data => {
                 // Handle successful saving of personal details
-                console.log('Personal details saved successfully:', data);
+                devLog('Personal details saved successfully:', data);
                 alert('Personal details saved successfully');
             })
             .catch(error => {
                 // Handle error
-                console.error('Error saving personal details:', error);
+                devLog('Error saving personal details:', error);
                 alert('An error occurred while saving personal details');
             });
     });
 
-    // Add event listener to the logout button
-    const urls = {
-        production: 'https://the-financial-tracker.azurewebsites.net',
-        development: 'http://localhost:3000'
-    };
-
-    // Determine the environment
-    const isProduction = window.location.hostname === 'the-financial-tracker.azurewebsites.net';
-    const loginUrl = isProduction ? urls.production : urls.development;
+    // Use getBaseUrl helper from utils.js
+    const loginUrl = getBaseUrl();
 
     const logoutBtn = document.getElementById('logoutBtn');
     logoutBtn.addEventListener('click', function () {
@@ -124,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(error => {
-                console.error('Error logging out:', error);
+                devLog('Error logging out:', error);
                 alert('An error occurred while logging out');
             });
     });

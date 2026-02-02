@@ -1,0 +1,91 @@
+/* ===================================
+   Common Styles - Shared across pages
+   No visual changes - just code organization
+   =================================== */
+
+/* CSS Custom Properties (Design Tokens) */
+:root {
+    /* Primary Colors */
+    --color-primary: #007bff;
+    --color-primary-hover: #0056b3;
+    --color-secondary: #3498db;
+    --color-secondary-hover: #2980b9;
+    --color-danger: #e74c3c;
+    --color-danger-hover: #c0392b;
+
+    /* Text Colors */
+    --color-text: #333;
+    --color-text-light: #555;
+    --color-text-muted: #777;
+
+    /* Background Colors */
+    --color-bg: #f2f2f2;
+    --color-bg-white: #fff;
+    --color-bg-light: #f9f9f9;
+
+    /* Border Colors */
+    --color-border: #ccc;
+    --color-border-light: #ddd;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+    /* Transitions */
+    --transition-normal: 0.3s ease;
+}
+
+/* ===================================
+   Header Styles (shared across pages)
+   =================================== */
+header {
+    background-color: var(--color-bg-white);
+    color: var(--color-text);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.left-header {
+    flex: 1;
+    text-align: left;
+}
+
+.right-header {
+    flex: 1;
+    text-align: right;
+}
+
+/* ===================================
+   Navigation Styles (shared across pages)
+   =================================== */
+.header-menu ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.header-menu ul li {
+    margin-left: 20px;
+}
+
+.header-menu ul li a {
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 10px 15px;
+    border-radius: 4px;
+    transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+.header-menu ul li a:hover,
+.header-menu ul li a:focus {
+    background-color: var(--color-border-light);
+    color: #000;
+    outline: none;
+}
